@@ -1,9 +1,9 @@
     const CONFIG = {
       businessName: 'Espresso & Emotion',
-      email: 'hallo@espresso-emotion.de',
-      phone: '+49 000 0000000',
-      whatsappNumber: '490000000000',
-      instagramUrl: 'https://instagram.com/',
+      email: 'Liebe.espresso.emotion@gmail.com',
+      phone: '+49 155 10233830',
+      whatsappNumber: '4915510233830',
+      instagramUrl: 'https://instagram.com/espresso_and_emotion',
       serviceArea: 'Dortmund & Umgebung',
       pricing: {
         basePackages: [
@@ -19,13 +19,8 @@
         childcarePerChildHour: 20
       },
       availability: {
-        busyRanges: [
-          { start: '2026-07-23T15:00:00+02:00', end: '2026-07-23T18:00:00+02:00' }
-        ],
         openingHour: 9,
-        closingHour: 21,
-        slotMinutes: 60,
-        bufferMinutes: 30
+        closingHour: 21
       }
     };
 
@@ -163,10 +158,10 @@
       document.querySelectorAll('.calc-step').forEach(el => el.classList.toggle('active', Number(el.dataset.step) === calc.step));
       document.querySelectorAll('.step-dot').forEach((el, idx) => el.classList.toggle('active', idx + 1 === calc.step));
       const titles = [
-        ['2. Anlass auswählen', 'Wählen Sie den Rahmen, in dem wir Ihren Kaffeewagen-Einsatz planen.'],
-        ['3. Umfang bestimmen', 'Gästezahl, Dauer und Entfernung bestimmen Grundpaket, Mengen und Anfahrt.'],
-        ['4. Genuss zusammenstellen', 'Kaffee-Flatrate, Upgrades und Genussleistungen auswählen.'],
-        ['4. Extras ergänzen', 'Ergänzen Sie nur, was Ihrem Event einen echten Mehrwert gibt.']
+        ['Anlass auswählen', 'Für welchen Rahmen planen wir Ihren Einsatz?'],
+        ['Umfang bestimmen', 'Gästezahl, Dauer und Entfernung bestimmen Grundpaket und Anfahrt.'],
+        ['Genuss zusammenstellen', 'Kaffee-Flatrate, Upgrades und Genussleistungen auswählen.'],
+        ['Extras ergänzen', 'Nur ergänzen, was echten Mehrwert bringt.']
       ];
       document.getElementById('stepTitle').textContent = titles[calc.step - 1][0];
       document.getElementById('stepHint').textContent = titles[calc.step - 1][1];
@@ -186,7 +181,7 @@
     document.querySelectorAll('input[name="event"]').forEach(input => input.addEventListener('change', () => { calc.event = input.value; updateQuote(); updateJourneySummary(); }));
     const guestInput = document.getElementById('guests');
     guestInput.addEventListener('input', () => { calc.guests = Number(guestInput.value); document.getElementById('guestOutput').textContent = calc.guests; updateQuote(); updateJourneySummary(); });
-    document.getElementById('duration').addEventListener('change', e => { calc.duration = Number(e.target.value); document.getElementById('calendarDuration').value = String(calc.duration); renderPrivateAvailability(); renderTimeSlots(); updateQuote(); updateJourneySummary(); });
+    document.getElementById('duration').addEventListener('change', e => { calc.duration = Number(e.target.value); document.getElementById('calendarDuration').value = String(calc.duration); applyScheduleTimeBounds(); updateQuote(); updateJourneySummary(); });
     document.getElementById('distance').addEventListener('input', e => { calc.distance = Math.max(0, Number(e.target.value || 0)); updateQuote(); updateJourneySummary(); });
     document.getElementById('note').addEventListener('input', e => calc.note = e.target.value.trim());
     document.querySelectorAll('input[name="service"]').forEach(input => input.addEventListener('change', () => {
@@ -210,7 +205,12 @@
     });
     document.querySelectorAll('.package-card').forEach(button => button.addEventListener('click', () => {
       const type = button.dataset.package;
-      calc.services = new Set(type === 'matcha' ? ['coffee', 'matcha'] : type === 'waffle' ? ['coffee', 'waffles'] : ['coffee']);
+      calc.services = new Set(
+        type === 'matcha' ? ['coffee', 'matcha']
+          : type === 'waffle' ? ['coffee', 'waffles']
+          : type === 'sparkling' ? ['sparkling']
+          : ['coffee']
+      );
       document.querySelectorAll('input[name="service"]').forEach(input => input.checked = calc.services.has(input.value));
       document.querySelectorAll('.package-card').forEach(btn => btn.classList.toggle('active', btn === button));
       updateQuote();
@@ -239,13 +239,7 @@
     });
 
 
-    const availabilityState = {
-      monthOffset: 0,
-      busy: [],
-      selectedDate: '',
-      selectedTime: '',
-      source: 'configured'
-    };
+    const availabilityState = { selectedDate: '', selectedTime: '' };
     const journeyState = { current: 1, maxUnlocked: 1 };
 
     function localDateKey(date) {
@@ -264,143 +258,44 @@
       const date = parseLocalDate(value);
       return date ? new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(date) : value;
     }
-    function addBusyRange(startValue, endValue) {
-      const start = parseLocalDate(startValue);
-      const end = parseLocalDate(endValue);
-      if (!start || !end || end <= start) return;
-      availabilityState.busy.push({ start, end });
-    }
-    function monthCells(year, month) {
-      const first = new Date(year, month, 1);
-      const leading = (first.getDay() + 6) % 7;
-      const count = new Date(year, month + 1, 0).getDate();
-      const cells = Array(leading).fill(null);
-      for (let day = 1; day <= count; day++) cells.push(new Date(year, month, day));
-      while (cells.length % 7) cells.push(null);
-      return cells;
-    }
-    function minutesToTime(minutes) {
-      const h = String(Math.floor(minutes / 60)).padStart(2, '0');
-      const m = String(minutes % 60).padStart(2, '0');
-      return `${h}:${m}`;
-    }
-    function dateTimeFor(dateValue, minutes) {
-      const [year, month, day] = dateValue.split('-').map(Number);
-      return new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0, 0);
-    }
-    function availableSlotsFor(dateValue) {
+    function applyScheduleTimeBounds() {
       const cfg = CONFIG.availability || {};
-      const opening = Number(cfg.openingHour ?? 9) * 60;
-      const closing = Number(cfg.closingHour ?? 21) * 60;
-      const step = Number(cfg.slotMinutes ?? 60);
-      const buffer = Number(cfg.bufferMinutes ?? 30) * 60 * 1000;
-      const duration = calc.duration * 60;
-      const slots = [];
-      for (let startMin = opening; startMin + duration <= closing; startMin += step) {
-        const start = dateTimeFor(dateValue, startMin);
-        const end = dateTimeFor(dateValue, startMin + duration);
-        const conflict = availabilityState.busy.some(range => start < new Date(range.end.getTime() + buffer) && end > new Date(range.start.getTime() - buffer));
-        if (!conflict) slots.push(minutesToTime(startMin));
-      }
-      return slots;
-    }
-    function renderPrivateAvailability() {
-      const root = document.getElementById('availabilityMonths');
-      const today = new Date();
-      const todayKey = localDateKey(today);
-      const months = [0, 1].map(delta => new Date(today.getFullYear(), today.getMonth() + availabilityState.monthOffset + delta, 1));
-      root.innerHTML = months.map(month => {
-        const title = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(month);
-        const weekdays = ['Mo','Di','Mi','Do','Fr','Sa','So'].map(day => `<span>${day}</span>`).join('');
-        const days = monthCells(month.getFullYear(), month.getMonth()).map(date => {
-          if (!date) return '<span class="availability-day outside"></span>';
-          const key = localDateKey(date);
-          const isPast = key < todayKey;
-          const slots = isPast ? [] : availableSlotsFor(key);
-          const available = slots.length > 0;
-          const selected = availabilityState.selectedDate === key;
-          const classes = ['availability-day', available ? 'available' : 'unavailable', key === todayKey ? 'today' : '', selected ? 'selected' : ''].filter(Boolean).join(' ');
-          const attrs = available ? `type="button" data-availability-date="${key}" aria-label="${formatLongDate(key)} mit ${slots.length} freien Startzeiten auswählen"` : 'type="button" disabled aria-hidden="true"';
-          return `<button class="${classes}" ${attrs}><span>${date.getDate()}</span>${available ? `<small>${slots.length}</small>` : ''}</button>`;
-        }).join('');
-        return `<article class="availability-month"><div class="availability-month-title"><strong>${title}</strong><span>verfügbare Tage</span></div><div class="availability-weekdays">${weekdays}</div><div class="availability-days">${days}</div></article>`;
-      }).join('');
-      document.querySelectorAll('[data-availability-date]').forEach(button => button.addEventListener('click', () => selectAvailabilityDate(button.dataset.availabilityDate)));
-    }
-    function renderTimeSlots() {
-      const picker = document.getElementById('timePicker');
-      if (!availabilityState.selectedDate) {
-        picker.hidden = true;
-        return;
-      }
-      picker.hidden = false;
-      document.getElementById('timePickerDate').textContent = formatLongDate(availabilityState.selectedDate);
-      document.getElementById('calendarDuration').value = String(calc.duration);
-      const slots = availableSlotsFor(availabilityState.selectedDate);
-      const root = document.getElementById('timeSlots');
-      const empty = document.getElementById('timeSlotEmpty');
-      root.innerHTML = slots.map(time => `<button type="button" class="time-slot${availabilityState.selectedTime === time ? ' selected' : ''}" data-time-slot="${time}">${time} Uhr</button>`).join('');
-      empty.hidden = slots.length > 0;
-      document.querySelectorAll('[data-time-slot]').forEach(button => button.addEventListener('click', () => selectAvailabilityTime(button.dataset.timeSlot)));
-      if (availabilityState.selectedTime && !slots.includes(availabilityState.selectedTime)) {
-        availabilityState.selectedTime = '';
-        calc.preferredTime = '';
-      }
-      updateAvailabilitySelection();
-    }
-    function selectAvailabilityDate(value) {
-      availabilityState.selectedDate = value;
-      availabilityState.selectedTime = '';
-      calc.preferredDate = value;
-      calc.preferredTime = '';
-      document.getElementById('contactDate').value = value;
-      document.getElementById('contactTime').value = '';
-      renderPrivateAvailability();
-      renderTimeSlots();
-      updateJourneySummary();
-      document.getElementById('timePicker').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-    function selectAvailabilityTime(value) {
-      availabilityState.selectedTime = value;
-      calc.preferredTime = value;
-      document.getElementById('contactTime').value = value;
-      renderTimeSlots();
-      updateAvailabilitySelection();
-      updateJourneySummary();
-      showToast('Wunschzeit wurde übernommen.');
+      const opening = Number(cfg.openingHour ?? 9);
+      const closing = Math.max(opening, Number(cfg.closingHour ?? 21) - calc.duration);
+      const input = document.getElementById('scheduleTime');
+      input.min = `${String(opening).padStart(2, '0')}:00`;
+      input.max = `${String(closing).padStart(2, '0')}:00`;
     }
     function updateAvailabilitySelection() {
       const title = document.getElementById('availabilitySelectionTitle');
       const hint = document.getElementById('availabilitySelectionHint');
       const button = document.getElementById('continueToCalculator');
-      if (!availabilityState.selectedDate) {
+      if (!availabilityState.selectedDate || !availabilityState.selectedTime) {
         title.textContent = 'Noch kein Termin ausgewählt';
-        hint.textContent = 'Wählen Sie zuerst Datum und Startzeit aus.';
-        button.disabled = true;
-        return;
-      }
-      if (!availabilityState.selectedTime) {
-        title.textContent = formatLongDate(availabilityState.selectedDate);
-        hint.textContent = 'Wählen Sie jetzt eine Startzeit aus.';
+        hint.textContent = 'Wählen Sie Datum und Startzeit aus.';
         button.disabled = true;
         return;
       }
       title.textContent = `${formatLongDate(availabilityState.selectedDate)} · ${availabilityState.selectedTime} Uhr`;
-      hint.textContent = `${calc.duration} Stunden vorgemerkt – die verbindliche Bestätigung folgt mit dem Angebot.`;
+      hint.textContent = `${calc.duration} Stunden vorgemerkt – die Bestätigung folgt mit dem Angebot.`;
       button.disabled = false;
       document.getElementById('calculatorDateContext').textContent = `${formatLongDate(availabilityState.selectedDate)} · ${availabilityState.selectedTime} Uhr · ${calc.duration} Std.`;
       document.getElementById('durationContext').textContent = `${calc.duration} Stunden`;
       document.getElementById('timeContext').textContent = `Beginn um ${availabilityState.selectedTime} Uhr`;
     }
-    function loadAvailability() {
-      const status = document.getElementById('availabilitySyncStatus');
-      availabilityState.busy = [];
-      (CONFIG.availability?.busyRanges || []).forEach(range => addBusyRange(range.start, range.end));
-      availabilityState.source = 'configured';
-      status.classList.remove('error');
-      status.textContent = 'Wählen Sie ein passendes Zeitfenster. Die finale Verfügbarkeit bestätigen wir persönlich mit Ihrem Angebot.';
-      renderPrivateAvailability();
-      renderTimeSlots();
+    function selectAvailabilityDate(value) {
+      availabilityState.selectedDate = value;
+      calc.preferredDate = value;
+      document.getElementById('contactDate').value = value;
+      updateAvailabilitySelection();
+      updateJourneySummary();
+    }
+    function selectAvailabilityTime(value) {
+      availabilityState.selectedTime = value;
+      calc.preferredTime = value;
+      document.getElementById('contactTime').value = value;
+      updateAvailabilitySelection();
+      updateJourneySummary();
     }
     function updateJourneySummary() {
       const q = latestQuote || calculateQuote();
@@ -429,11 +324,11 @@
     }
     function setJourneyStage(stage, options = {}) {
       const labels = [
-        ['Termin & Uhrzeit', 'Wählen Sie ein freies Datum, eine Startzeit und die ungefähre Einsatzdauer.'],
-        ['Anlass', 'Wählen Sie den Anlass, damit Vorbereitung und Ablauf passend kalkuliert werden.'],
-        ['Umfang', 'Gästezahl und Entfernung konkretisieren Personal, Mengen und Logistik.'],
-        ['Genuss & Extras', 'Stellen Sie Leistungen zusammen und prüfen Sie den laufend aktualisierten Preisrahmen.'],
-        ['Anfrage', 'Prüfen Sie Ihre Auswahl und ergänzen Sie Ihre Kontaktdaten.']
+        ['Termin & Uhrzeit', 'Datum, Startzeit und Dauer wählen.'],
+        ['Anlass', 'Anlass auswählen.'],
+        ['Umfang', 'Gästezahl und Entfernung angeben.'],
+        ['Genuss & Extras', 'Leistungen wählen und Preisrahmen prüfen.'],
+        ['Anfrage', 'Auswahl prüfen und Kontaktdaten ergänzen.']
       ];
       const safe = Math.max(1, Math.min(5, Number(stage) || 1));
       if (options.unlock) journeyState.maxUnlocked = Math.max(journeyState.maxUnlocked, safe);
@@ -471,16 +366,12 @@
     function setupSalesJourney() {
       document.body.classList.add('sales-flow-ready');
       document.querySelectorAll('.journey-step').forEach(button => button.addEventListener('click', () => setJourneyStage(Number(button.dataset.journey), { scroll: true })));
-      document.getElementById('availabilityPrev').addEventListener('click', () => { availabilityState.monthOffset = Math.max(0, availabilityState.monthOffset - 1); renderPrivateAvailability(); });
-      document.getElementById('availabilityNext').addEventListener('click', () => { availabilityState.monthOffset += 1; renderPrivateAvailability(); });
+      document.getElementById('scheduleDate').addEventListener('change', event => selectAvailabilityDate(event.target.value));
+      document.getElementById('scheduleTime').addEventListener('change', event => selectAvailabilityTime(event.target.value));
       document.getElementById('calendarDuration').addEventListener('change', event => {
         calc.duration = Number(event.target.value);
         document.getElementById('duration').value = String(calc.duration);
-        availabilityState.selectedTime = '';
-        calc.preferredTime = '';
-        document.getElementById('contactTime').value = '';
-        renderPrivateAvailability();
-        renderTimeSlots();
+        applyScheduleTimeBounds();
         updateQuote();
         updateJourneySummary();
       });
@@ -493,29 +384,12 @@
       document.getElementById('changeScheduleInline').addEventListener('click', openScheduleStep);
       const today = localDateKey(new Date());
       document.getElementById('contactDate').min = today;
-      loadAvailability();
+      document.getElementById('scheduleDate').min = today;
+      applyScheduleTimeBounds();
       setJourneyStage(1, { unlock: true, scroll: false });
     }
 
-    const reviews = [
-      { quote: 'Der Wagen wurde zum natürlichen Treffpunkt unseres Tages – ruhig, herzlich und genau im richtigen Moment präsent.', meta: 'Musterstimme · Hochzeit' },
-      { quote: 'Von der Abstimmung bis zum letzten Espresso wirkte alles klar organisiert, ohne sich jemals unpersönlich anzufühlen.', meta: 'Musterstimme · Firmenfeier' },
-      { quote: 'Unsere Gäste hatten guten Kaffee, frische Crêpes und vor allem einen Ort, an dem Gespräche ganz von selbst entstanden.', meta: 'Musterstimme · private Feier' }
-    ];
-    let reviewIndex = 0;
-    const controls = document.getElementById('reviewControls');
-    reviews.forEach((_, idx) => {
-      const dot = document.createElement('button'); dot.className = 'review-dot'; dot.type = 'button'; dot.ariaLabel = `Bewertung ${idx + 1}`;
-      dot.addEventListener('click', () => { reviewIndex = idx; renderReview(); }); controls.appendChild(dot);
-    });
-    function renderReview() {
-      document.getElementById('reviewQuote').textContent = reviews[reviewIndex].quote;
-      document.getElementById('reviewMeta').textContent = reviews[reviewIndex].meta;
-      [...controls.children].forEach((dot, idx) => dot.classList.toggle('active', idx === reviewIndex));
-    }
     setupSalesJourney();
-    renderReview();
-    setInterval(() => { reviewIndex = (reviewIndex + 1) % reviews.length; renderReview(); }, 6500);
 
     document.querySelectorAll('.faq-trigger').forEach(button => button.addEventListener('click', () => {
       const item = button.closest('.faq-item'); const open = item.classList.toggle('open'); button.setAttribute('aria-expanded', String(open));
@@ -570,12 +444,40 @@
       window.open(url, '_blank', 'noopener');
     });
 
-    const cookie = document.getElementById('cookieBanner');
-    try { if (!localStorage.getItem('ee-cookie-notice')) setTimeout(() => cookie.classList.add('show'), 900); } catch { cookie.classList.add('show'); }
-    document.getElementById('cookieAccept').addEventListener('click', () => { try { localStorage.setItem('ee-cookie-notice', 'accepted'); } catch {} cookie.classList.remove('show'); });
-
+    const revealTargets = [...document.querySelectorAll('[data-reveal]')];
     const observer = new IntersectionObserver(entries => entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('revealed'); observer.unobserve(entry.target); } }), { threshold: .12 });
-    document.querySelectorAll('[data-reveal]').forEach(el => observer.observe(el));
+    revealTargets.forEach(el => observer.observe(el));
+    // Sicherheitsnetz: bleibt der Observer aus (Fehler, alter Browser), waere die
+    // Seite sonst dauerhaft leer -- nach 2s wird alles sichtbar gemacht.
+    setTimeout(() => revealTargets.forEach(el => el.classList.add('revealed')), 2000);
+
+    // Befund 5: schwebender Button erst zeigen, wenn der Hero durch ist --
+    // im Hero steht bereits ein Button mit demselben Text.
+    const floatingCta = document.querySelector('.floating-cta');
+    const heroSection = document.getElementById('start');
+    const planSection = document.getElementById('planen');
+    if (floatingCta && heroSection) {
+      // Der Button ist nur dort sinnvoll, wo gerade KEIN echter Anfrage-Button
+      // sichtbar ist -- also weder im Hero noch im Konfigurator.
+      const inView = new Set();
+      const ctaSpy = new IntersectionObserver(entries => {
+        entries.forEach(e => e.isIntersecting ? inView.add(e.target) : inView.delete(e.target));
+        floatingCta.classList.toggle('is-visible', inView.size === 0);
+      }, { rootMargin: '-120px 0px 0px 0px' });
+      ctaSpy.observe(heroSection);
+      if (planSection) ctaSpy.observe(planSection);
+    }
+
+    // Befund 7: kompakte Preisleiste auf Mobile auf- und zuklappen
+    const resultCard = document.querySelector('.result-card');
+    const resultToggle = document.getElementById('resultToggle');
+    if (resultCard && resultToggle) {
+      resultToggle.addEventListener('click', () => {
+        const open = resultCard.classList.toggle('is-open');
+        resultToggle.setAttribute('aria-expanded', String(open));
+        resultToggle.firstChild.nodeValue = open ? 'Details ausblenden' : 'Details';
+      });
+    }
 
     const sections = [...document.querySelectorAll('main section[id]')];
     const navLinks = [...document.querySelectorAll('.drawer-nav a')];
