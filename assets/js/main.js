@@ -89,18 +89,28 @@
       return { base, serviceCost: money(serviceCost), extrasCost: money(extrasCost), travelCost: money(travelCost), total, openItems, packageHours: pkg?.maxHours || null };
     }
 
+    /* Der Richtwert ist die wichtigste Zahl der Seite. Die Animation ist nur
+       Beiwerk: der Endwert wird immer gesetzt -- auch wenn requestAnimationFrame
+       gar nicht laeuft (Hintergrund-Tab) oder die Zeitbasis abweicht. */
     function animateNumber(el, next) {
-      const current = Number(el.dataset.value || 0);
+      if (el._anim) cancelAnimationFrame(el._anim);
+      clearTimeout(el._animFallback);
+      const from = Number(el.dataset.value);
+      const current = Number.isFinite(from) ? from : next;
+      el.dataset.value = next;
+      const finish = () => { el.textContent = euro.format(next); };
+      el._animFallback = setTimeout(finish, 400);
+      if (current === next || !window.requestAnimationFrame
+          || matchMedia('(prefers-reduced-motion: reduce)').matches) { finish(); return; }
       const start = performance.now();
       const duration = 320;
       const tick = (now) => {
-        const p = Math.min(1, (now - start) / duration);
+        const p = Math.min(1, Math.max(0, (now - start) / duration));
         const eased = 1 - Math.pow(1 - p, 3);
-        const value = current + (next - current) * eased;
-        el.textContent = euro.format(value);
-        if (p < 1) requestAnimationFrame(tick); else el.dataset.value = next;
+        el.textContent = euro.format(current + (next - current) * eased);
+        if (p < 1) el._anim = requestAnimationFrame(tick); else finish();
       };
-      requestAnimationFrame(tick);
+      el._anim = requestAnimationFrame(tick);
     }
 
     function updateQuote() {
@@ -127,7 +137,7 @@
         : 'Unverbindlicher Brutto-Richtwert auf Basis Ihrer Auswahl. Den finalen Preis bestätigen wir mit dem individuellen Angebot.';
       const childcarePreview = document.getElementById('childcarePricePreview');
       if (childcarePreview) childcarePreview.textContent = euro.format(CONFIG.pricing.childcarePerChildHour * calc.children * calc.duration);
-      if (document.getElementById('journeySummaryPrice')) updateJourneySummary();
+      updateJourneySummary();
     }
 
     function quoteText() {
@@ -153,41 +163,91 @@
       ].filter(Boolean).join('\n');
     }
 
-    function setStep(step, options = {}) {
-      calc.step = Math.max(1, Math.min(4, step));
-      document.querySelectorAll('.calc-step').forEach(el => el.classList.toggle('active', Number(el.dataset.step) === calc.step));
-      document.querySelectorAll('.step-dot').forEach((el, idx) => el.classList.toggle('active', idx + 1 === calc.step));
-      const titles = [
-        ['Anlass auswählen', 'Für welchen Rahmen planen wir Ihren Einsatz?'],
-        ['Umfang bestimmen', 'Gästezahl, Dauer und Entfernung bestimmen Grundpaket und Anfahrt.'],
-        ['Genuss zusammenstellen', 'Kaffee-Flatrate, Upgrades und Genussleistungen auswählen.'],
-        ['Extras ergänzen', 'Nur ergänzen, was echten Mehrwert bringt.']
-      ];
-      document.getElementById('stepTitle').textContent = titles[calc.step - 1][0];
-      document.getElementById('stepHint').textContent = titles[calc.step - 1][1];
-      document.getElementById('stepNumber').textContent = calc.step;
-      document.getElementById('prevStep').disabled = false;
-      document.getElementById('prevStep').textContent = calc.step === 1 ? 'Zurück zum Termin' : 'Zurück';
-      document.getElementById('nextStep').textContent = calc.step === 1 ? 'Weiter: Umfang' : calc.step === 2 ? 'Weiter: Genuss' : calc.step === 3 ? 'Weiter: Extras' : 'Zur Anfrage';
-      document.getElementById('durationContext').textContent = `${calc.duration} Stunden`;
-      document.getElementById('timeContext').textContent = calc.preferredTime ? `Beginn um ${calc.preferredTime} Uhr` : 'Startzeit noch offen';
-      if (options.syncJourney !== false) {
-        const stage = calc.step === 1 ? 2 : calc.step === 2 ? 3 : 4;
-        setJourneyStage(stage, { unlock: true, scroll: false, syncStep: false });
-      }
-      updateJourneySummary();
+    /* ---------------------------------------------------------------
+       Konfigurator: eine Sektion, links die Schrittleiste mit Preis,
+       rechts der jeweils aktive Schritt.
+       --------------------------------------------------------------- */
+    const STEP_META = [
+      ['Termin & Uhrzeit', 'Datum, Startzeit und Dauer wählen.', 'Weiter: Anlass'],
+      ['Anlass', 'Damit Aufwand und Ablauf passend kalkuliert werden.', 'Weiter: Umfang'],
+      ['Umfang', 'Gästezahl und Entfernung konkretisieren.', 'Weiter: Genuss'],
+      ['Genuss', 'Kaffee, Upgrades und Genussleistungen wählen.', 'Weiter: Extras'],
+      ['Extras', 'Nur ergänzen, was echten Mehrwert bringt.', 'Zur Anfrage'],
+      ['Anfrage', 'Kontaktdaten ergänzen und unverbindlich senden.', 'Anfrage senden']
+    ];
+    const TOTAL_STEPS = STEP_META.length;
+    let maxUnlocked = 1;
+
+    function stepSummary(n) {
+      if (n === 1) return calc.preferredDate
+        ? formatLongDate(calc.preferredDate)
+          + (calc.preferredTime ? ' · ' + calc.preferredTime + ' Uhr' : '')
+          + ' · ' + calc.duration + ' Std.'
+        : 'Noch offen';
+      if (n === 2) return eventData[calc.event].label;
+      if (n === 3) return calc.guests + ' Gäste · ' + calc.distance + ' km';
+      if (n === 4) return [...calc.services].map(k => serviceData[k].label).join(', ') || 'Keine Auswahl';
+      if (n === 5) return calc.extras.size
+        ? [...calc.extras].map(k => extraData[k].label).join(', ')
+        : 'Keine Extras';
+      return 'Kontaktdaten ergänzen';
     }
 
-    document.querySelectorAll('input[name="event"]').forEach(input => input.addEventListener('change', () => { calc.event = input.value; updateQuote(); updateJourneySummary(); }));
+    function renderRail() {
+      document.querySelectorAll('.rail-step').forEach(btn => {
+        const n = Number(btn.dataset.journey);
+        btn.classList.toggle('is-active', n === calc.step);
+        btn.classList.toggle('is-done', n < maxUnlocked);
+        btn.disabled = n > maxUnlocked;
+        const hint = btn.querySelector('[data-rail-hint]');
+        if (hint) hint.textContent = n < calc.step || (n < maxUnlocked && n !== calc.step)
+          ? stepSummary(n) : STEP_META[n - 1][1];
+      });
+    }
+
+    function renderRecap() {
+      const box = document.getElementById('recap');
+      if (!box) return;
+      box.innerHTML = STEP_META.slice(0, 5).map((meta, i) => {
+        const n = i + 1;
+        return '<div class="recap-row"><small>' + meta[0] + '</small><span>' + stepSummary(n)
+          + '</span><button class="link-button" data-recap="' + n + '" type="button">ändern</button></div>';
+      }).join('');
+      box.querySelectorAll('[data-recap]').forEach(btn =>
+        btn.addEventListener('click', () => setStep(Number(btn.dataset.recap), { scroll: true })));
+    }
+
+    function setStep(step, options = {}) {
+      calc.step = Math.max(1, Math.min(TOTAL_STEPS, step));
+      maxUnlocked = Math.max(maxUnlocked, calc.step);
+      document.querySelectorAll('.cfg-step').forEach(el =>
+        el.classList.toggle('is-active', Number(el.dataset.step) === calc.step));
+      const meta = STEP_META[calc.step - 1];
+      document.getElementById('stepTitle').textContent = meta[0];
+      document.getElementById('stepHint').textContent = meta[1];
+      document.getElementById('prevStep').disabled = calc.step === 1;
+      document.getElementById('nextStep').textContent = meta[2];
+      if (calc.step === TOTAL_STEPS) renderRecap();
+      renderRail();
+      updateJourneySummary();
+      if (options.scroll) {
+        document.getElementById('planen').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    document.querySelectorAll('input[name="event"]').forEach(input => input.addEventListener('change', () => { calc.event = input.value; updateQuote(); renderRail(); }));
     const guestInput = document.getElementById('guests');
-    guestInput.addEventListener('input', () => { calc.guests = Number(guestInput.value); document.getElementById('guestOutput').textContent = calc.guests; updateQuote(); updateJourneySummary(); });
-    document.getElementById('duration').addEventListener('change', e => { calc.duration = Number(e.target.value); document.getElementById('calendarDuration').value = String(calc.duration); applyScheduleTimeBounds(); updateQuote(); updateJourneySummary(); });
-    document.getElementById('distance').addEventListener('input', e => { calc.distance = Math.max(0, Number(e.target.value || 0)); updateQuote(); updateJourneySummary(); });
+    guestInput.addEventListener('input', () => { calc.guests = Number(guestInput.value); document.getElementById('guestOutput').textContent = calc.guests; updateQuote(); renderRail(); });
+    document.getElementById('duration').addEventListener('change', e => {
+      calc.duration = Number(e.target.value);
+      applyScheduleTimeBounds(); updateQuote(); updateJourneySummary(); renderRail();
+    });
+    document.getElementById('distance').addEventListener('input', e => { calc.distance = Math.max(0, Number(e.target.value || 0)); updateQuote(); renderRail(); });
     document.getElementById('note').addEventListener('input', e => calc.note = e.target.value.trim());
     document.querySelectorAll('input[name="service"]').forEach(input => input.addEventListener('change', () => {
       if (input.checked) calc.services.add(input.value); else calc.services.delete(input.value);
       document.querySelectorAll('.package-card').forEach(btn => btn.classList.remove('active'));
-      updateQuote();
+      updateQuote(); renderRail();
     }));
     function syncConditionalExtras() {
       const wrap = document.getElementById('childcareOptions');
@@ -195,8 +255,7 @@
     }
     document.querySelectorAll('input[name="extra"]').forEach(input => input.addEventListener('change', () => {
       if (input.checked) calc.extras.add(input.value); else calc.extras.delete(input.value);
-      syncConditionalExtras();
-      updateQuote();
+      syncConditionalExtras(); updateQuote(); renderRail();
     }));
     document.getElementById('childrenCount').addEventListener('input', event => {
       calc.children = Math.min(20, Math.max(1, Number(event.target.value || 1)));
@@ -208,39 +267,39 @@
       calc.services = new Set(
         type === 'matcha' ? ['coffee', 'matcha']
           : type === 'waffle' ? ['coffee', 'waffles']
-          : type === 'sparkling' ? ['sparkling']
-          : ['coffee']
+            : type === 'sparkling' ? ['sparkling']
+              : ['coffee']
       );
       document.querySelectorAll('input[name="service"]').forEach(input => input.checked = calc.services.has(input.value));
       document.querySelectorAll('.package-card').forEach(btn => btn.classList.toggle('active', btn === button));
-      updateQuote();
+      updateQuote(); renderRail();
     }));
     syncConditionalExtras();
-    document.getElementById('prevStep').addEventListener('click', () => {
-      if (calc.step === 1) setJourneyStage(1, { scroll: true });
-      else setStep(calc.step - 1);
-    });
-    document.getElementById('nextStep').addEventListener('click', () => {
-      if (calc.step < 4) setStep(calc.step + 1);
-      else { fillContactFromQuote(); setJourneyStage(5, { unlock: true, scroll: true }); }
-    });
 
-    function fillContactFromQuote() {
+    document.getElementById('prevStep').addEventListener('click', () => setStep(calc.step - 1));
+    document.getElementById('nextStep').addEventListener('click', () => {
+      if (calc.step < TOTAL_STEPS) {
+        if (calc.step === TOTAL_STEPS - 1) fillContactFromQuote({ silent: true });
+        setStep(calc.step + 1);
+      } else {
+        document.getElementById('contactForm').requestSubmit();
+      }
+    });
+    document.querySelectorAll('.rail-step').forEach(btn =>
+      btn.addEventListener('click', () => { if (!btn.disabled) setStep(Number(btn.dataset.journey)); }));
+
+    function fillContactFromQuote(options = {}) {
       document.getElementById('contactEvent').value = eventData[calc.event].label;
       if (calc.preferredDate) document.getElementById('contactDate').value = calc.preferredDate;
       if (calc.preferredTime) document.getElementById('contactTime').value = calc.preferredTime;
       document.getElementById('contactMessage').value = quoteText();
-      showToast('Konfiguration wurde in die Anfrage übernommen.');
+      if (!options.silent) showToast('Konfiguration wurde in die Anfrage übernommen.');
     }
-    document.getElementById('useQuote').addEventListener('click', () => { fillContactFromQuote(); setJourneyStage(5, { unlock: true, scroll: true }); });
+    document.getElementById('useQuote').addEventListener('click', () => { fillContactFromQuote(); setStep(TOTAL_STEPS); });
     document.getElementById('copyQuote').addEventListener('click', async () => {
       try { await navigator.clipboard.writeText(quoteText()); showToast('Kalkulation kopiert.'); }
       catch { showToast('Kopieren nicht möglich – bitte Text in der Anfrage verwenden.'); }
     });
-
-
-    const availabilityState = { selectedDate: '', selectedTime: '' };
-    const journeyState = { current: 1, maxUnlocked: 1 };
 
     function localDateKey(date) {
       const y = date.getFullYear();
@@ -250,146 +309,44 @@
     }
     function parseLocalDate(value) {
       if (!value) return null;
-      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(`${value}T12:00:00`);
-      const parsed = new Date(value);
-      return Number.isNaN(parsed.getTime()) ? null : parsed;
+      const [y, m, d] = value.split('-').map(Number);
+      if (!y || !m || !d) return null;
+      return new Date(y, m - 1, d);
     }
     function formatLongDate(value) {
       const date = parseLocalDate(value);
-      return date ? new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(date) : value;
+      if (!date) return '';
+      return date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     }
     function applyScheduleTimeBounds() {
       const cfg = CONFIG.availability || {};
       const opening = Number(cfg.openingHour ?? 9);
       const closing = Math.max(opening, Number(cfg.closingHour ?? 21) - calc.duration);
       const input = document.getElementById('scheduleTime');
+      if (!input) return;
       input.min = `${String(opening).padStart(2, '0')}:00`;
       input.max = `${String(closing).padStart(2, '0')}:00`;
     }
-    function updateAvailabilitySelection() {
-      const title = document.getElementById('availabilitySelectionTitle');
-      const hint = document.getElementById('availabilitySelectionHint');
-      const button = document.getElementById('continueToCalculator');
-      if (!availabilityState.selectedDate || !availabilityState.selectedTime) {
-        title.textContent = 'Noch kein Termin ausgewählt';
-        hint.textContent = 'Wählen Sie Datum und Startzeit aus.';
-        button.disabled = true;
-        return;
-      }
-      title.textContent = `${formatLongDate(availabilityState.selectedDate)} · ${availabilityState.selectedTime} Uhr`;
-      hint.textContent = `${calc.duration} Stunden vorgemerkt – die Bestätigung folgt mit dem Angebot.`;
-      button.disabled = false;
-      document.getElementById('calculatorDateContext').textContent = `${formatLongDate(availabilityState.selectedDate)} · ${availabilityState.selectedTime} Uhr · ${calc.duration} Std.`;
-      document.getElementById('durationContext').textContent = `${calc.duration} Stunden`;
-      document.getElementById('timeContext').textContent = `Beginn um ${availabilityState.selectedTime} Uhr`;
-    }
-    function selectAvailabilityDate(value) {
-      availabilityState.selectedDate = value;
-      calc.preferredDate = value;
-      document.getElementById('contactDate').value = value;
-      updateAvailabilitySelection();
-      updateJourneySummary();
-    }
-    function selectAvailabilityTime(value) {
-      availabilityState.selectedTime = value;
-      calc.preferredTime = value;
-      document.getElementById('contactTime').value = value;
-      updateAvailabilitySelection();
-      updateJourneySummary();
-    }
+
     function updateJourneySummary() {
-      const q = latestQuote || calculateQuote();
-      const dateText = calc.preferredDate
-        ? `${new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(parseLocalDate(calc.preferredDate))}${calc.preferredTime ? ` · ${calc.preferredTime} Uhr` : ''}`
-        : 'Noch offen';
-      const dateEl = document.getElementById('journeySummaryDate');
-      const eventEl = document.getElementById('journeySummaryEvent');
-      const scopeEl = document.getElementById('journeySummaryScope');
-      const priceEl = document.getElementById('journeySummaryPrice');
-      if (dateEl) dateEl.textContent = dateText;
-      if (eventEl) eventEl.textContent = eventData[calc.event].label;
-      if (scopeEl) scopeEl.textContent = `${calc.guests} Gäste · ${calc.duration} Std. · ${calc.distance} km`;
-      if (priceEl) priceEl.textContent = `${q.openItems.length ? 'ab ' : ''}${euro.format(q.total)}`;
-    }
-    function showSalesStage(stage) {
-      const calendar = document.getElementById('kalender');
-      const prices = document.getElementById('preise');
-      const contact = document.getElementById('kontakt');
-      calendar.classList.toggle('is-active', stage === 1);
-      prices.classList.toggle('is-active', stage >= 2 && stage <= 4);
-      contact.classList.toggle('is-active', stage === 5);
-      calendar.setAttribute('aria-hidden', String(stage !== 1));
-      prices.setAttribute('aria-hidden', String(!(stage >= 2 && stage <= 4)));
-      contact.setAttribute('aria-hidden', String(stage !== 5));
-    }
-    function setJourneyStage(stage, options = {}) {
-      const labels = [
-        ['Termin & Uhrzeit', 'Datum, Startzeit und Dauer wählen.'],
-        ['Anlass', 'Anlass auswählen.'],
-        ['Umfang', 'Gästezahl und Entfernung angeben.'],
-        ['Genuss & Extras', 'Leistungen wählen und Preisrahmen prüfen.'],
-        ['Anfrage', 'Auswahl prüfen und Kontaktdaten ergänzen.']
-      ];
-      const safe = Math.max(1, Math.min(5, Number(stage) || 1));
-      if (options.unlock) journeyState.maxUnlocked = Math.max(journeyState.maxUnlocked, safe);
-      if (safe > journeyState.maxUnlocked) {
-        showToast('Schließen Sie bitte zuerst den aktuellen Schritt ab.');
-        return;
-      }
-      journeyState.current = safe;
-      document.querySelectorAll('.journey-step').forEach(button => {
-        const current = Number(button.dataset.journey);
-        button.classList.toggle('active', current === safe);
-        button.classList.toggle('done', current < safe);
-        button.classList.toggle('locked', current > journeyState.maxUnlocked);
-        button.disabled = current > journeyState.maxUnlocked;
-      });
-      const label = document.getElementById('journeyProgressLabel');
-      const bar = document.getElementById('journeyProgressBar');
-      if (label) label.textContent = `Schritt ${safe} von 5 · ${labels[safe - 1][0]}`;
-      if (bar) bar.style.width = `${safe * 20}%`;
-      document.getElementById('journeyCurrentTitle').textContent = labels[safe - 1][0];
-      document.getElementById('journeyCurrentHint').textContent = labels[safe - 1][1];
-      showSalesStage(safe);
-      if (options.syncStep !== false) {
-        if (safe === 2) setStep(1, { syncJourney: false });
-        if (safe === 3) setStep(2, { syncJourney: false });
-        if (safe === 4 && calc.step < 3) setStep(3, { syncJourney: false });
-        if (safe === 5) fillContactFromQuote();
-      }
-      updateJourneySummary();
-      if (options.scroll) document.getElementById('salesJourneyPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    function openScheduleStep() {
-      setJourneyStage(1, { scroll: true });
-    }
-    function setupSalesJourney() {
-      document.body.classList.add('sales-flow-ready');
-      document.querySelectorAll('.journey-step').forEach(button => button.addEventListener('click', () => setJourneyStage(Number(button.dataset.journey), { scroll: true })));
-      document.getElementById('scheduleDate').addEventListener('change', event => selectAvailabilityDate(event.target.value));
-      document.getElementById('scheduleTime').addEventListener('change', event => selectAvailabilityTime(event.target.value));
-      document.getElementById('calendarDuration').addEventListener('change', event => {
-        calc.duration = Number(event.target.value);
-        document.getElementById('duration').value = String(calc.duration);
-        applyScheduleTimeBounds();
-        updateQuote();
-        updateJourneySummary();
-      });
-      document.getElementById('continueToCalculator').addEventListener('click', () => {
-        if (!calc.preferredDate || !calc.preferredTime) return;
-        journeyState.maxUnlocked = Math.max(journeyState.maxUnlocked, 2);
-        setJourneyStage(2, { unlock: true, scroll: true });
-      });
-      document.getElementById('changeSchedule').addEventListener('click', openScheduleStep);
-      document.getElementById('changeScheduleInline').addEventListener('click', openScheduleStep);
-      const today = localDateKey(new Date());
-      document.getElementById('contactDate').min = today;
-      document.getElementById('scheduleDate').min = today;
-      applyScheduleTimeBounds();
-      setJourneyStage(1, { unlock: true, scroll: false });
+      const durationContext = document.getElementById('durationContext');
+      if (durationContext) durationContext.textContent = `${calc.duration} Stunden`;
+      const timeContext = document.getElementById('timeContext');
+      if (timeContext) timeContext.textContent = calc.preferredTime
+        ? `Beginn um ${calc.preferredTime} Uhr` : 'Startzeit noch offen';
     }
 
-    setupSalesJourney();
+    document.getElementById('scheduleDate').addEventListener('change', event => {
+      calc.preferredDate = event.target.value;
+      document.getElementById('contactDate').value = event.target.value;
+      updateJourneySummary(); renderRail();
+    });
+    document.getElementById('scheduleTime').addEventListener('change', event => {
+      calc.preferredTime = event.target.value;
+      document.getElementById('contactTime').value = event.target.value;
+      updateJourneySummary(); renderRail();
+    });
+    applyScheduleTimeBounds();
 
     document.querySelectorAll('.faq-trigger').forEach(button => button.addEventListener('click', () => {
       const item = button.closest('.faq-item'); const open = item.classList.toggle('open'); button.setAttribute('aria-expanded', String(open));
@@ -466,17 +423,6 @@
       }, { rootMargin: '-120px 0px 0px 0px' });
       ctaSpy.observe(heroSection);
       if (planSection) ctaSpy.observe(planSection);
-    }
-
-    // Befund 7: kompakte Preisleiste auf Mobile auf- und zuklappen
-    const resultCard = document.querySelector('.result-card');
-    const resultToggle = document.getElementById('resultToggle');
-    if (resultCard && resultToggle) {
-      resultToggle.addEventListener('click', () => {
-        const open = resultCard.classList.toggle('is-open');
-        resultToggle.setAttribute('aria-expanded', String(open));
-        resultToggle.firstChild.nodeValue = open ? 'Details ausblenden' : 'Details';
-      });
     }
 
     const sections = [...document.querySelectorAll('main section[id]')];

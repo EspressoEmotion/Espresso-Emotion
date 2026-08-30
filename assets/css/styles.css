@@ -248,15 +248,26 @@
     .marquee-track span::after { content: "✦"; color: var(--gold); }
     @keyframes marquee { to { transform: translateX(-50%); } }
 
-    .intro-grid { display: grid; grid-template-columns: .85fr 1.15fr; gap: clamp(45px, 8vw, 120px); align-items: start; }
+    .intro-grid { display: grid; grid-template-columns: .85fr 1.15fr; align-items: start;
+      /* Spalten weit auseinander, Zeilen eng -- sonst reisst unter dem
+         Abschnittskopf eine Luecke von bis zu 120px auf. */
+      column-gap: clamp(45px, 8vw, 120px); row-gap: clamp(18px, 2.5vw, 34px); }
+    /* Der Abschnittskopf lief bisher in der schmalen linken Spalte mit und
+       liess die Ueberschrift eingeklemmt wirken. Jetzt spannt er beide Spalten. */
+    .section-intro-head { grid-column: 1 / -1; margin-bottom: clamp(6px, 1.5vw, 18px); }
+    .section-intro-head h2 { max-width: 24ch; margin-bottom: 0; }
     .quote { font-family: Georgia, serif; font-size: clamp(1.7rem, 3vw, 2.55rem); line-height: 1.15; color: var(--coffee); max-width: 540px; }
     .feature-stack { display: grid; gap: 18px; }
     .feature-line { display: grid; grid-template-columns: 50px 1fr; gap: 16px; align-items: start; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
     .feature-num { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); color: var(--coffee); font-family: Georgia, serif; }
     .feature-line p { margin-bottom: 0; color: var(--muted); }
 
-    .section-head { display: flex; justify-content: space-between; gap: 30px; align-items: end; margin-bottom: 44px; }
-    .section-head > * { max-width: 650px; }
+    /* Ueberschrift ueber die volle Breite, der Fliesstext darunter --
+       vorher standen beide nebeneinander und die Ueberschrift blieb schmal. */
+    .section-head { display: block; margin-bottom: 44px; }
+    .section-head > div { max-width: none; }
+    .section-head h2 { max-width: 26ch; margin-bottom: 0; }
+    .section-head .lead { margin-top: 18px; max-width: 66ch; }
     .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
     .service-card {
       position: relative; min-height: 168px; padding: 26px 26px 22px;
@@ -275,16 +286,7 @@
     .service-card .card-kicker { position: absolute; top: 30px; right: 27px; font-size: .72rem; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; }
 
     .calculator-wrap { position: relative; }
-    .calculator-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(330px, .75fr); gap: 22px; align-items: start; }
     .panel { border: 1px solid var(--line); border-radius: var(--radius-lg); background: rgba(255,255,255,.68); box-shadow: var(--shadow-sm); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
-    .calculator-form { padding: clamp(22px, 4vw, 38px); }
-    .calc-head { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 34px; }
-    .calc-head h3 { margin-bottom: 4px; font-family: Georgia, serif; font-size: 1.65rem; }
-    .step-indicator { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: .78rem; white-space: nowrap; }
-    .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); transition: width .2s ease, background .2s ease; }
-    .step-dot.active { width: 24px; background: var(--coffee); }
-    .calc-step { display: none; animation: step-in .3s ease; }
-    .calc-step.active { display: block; }
     @keyframes step-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
     .field-label { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 10px; font-weight: 760; }
     .field-label small { font-weight: 500; color: var(--muted); }
@@ -304,8 +306,7 @@
     /* In Rastern regelt gap den Abstand -- sonst doppelt sich er */
     .form-grid-2 > .form-group, .form-grid-3 > .form-group { margin-bottom: 0; }
     /* Labels im dunklen Kontaktpanel muessen hell sein */
-    .contact-form .field-label { color: var(--cream); font-size: .84rem; margin-bottom: 7px; }
-    .contact-form .field-label small { color: rgba(248,242,232,.6); }
+    .contact-form .field-label { font-size: .84rem; margin-bottom: 7px; }
     .choice-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
     .choice-card, .addon-card {
       position: relative; padding: 18px; border-radius: 17px; border: 1px solid var(--line); background: rgba(255,255,255,.55); cursor: pointer; transition: border-color .2s ease, background .2s ease, transform .2s ease, box-shadow .2s ease;
@@ -325,29 +326,7 @@
     .package-card span { display: block; color: var(--muted); font-size: .78rem; margin-top: 5px; }
     .package-card.active span { color: rgba(248,242,232,.65); }
     .package-card b { display: block; margin-top: 14px; font-family: Georgia, serif; font-size: 1.15rem; }
-    .calc-nav { margin-top: 30px; display: flex; justify-content: space-between; gap: 12px; }
-
-    .result-toggle { display: none; align-items: center; gap: 6px; margin-top: 10px;
-      padding: 7px 13px; min-height: 44px; border: 1px solid rgba(255,255,255,.22);
-      border-radius: 999px; background: transparent; color: var(--cream);
-      font: 600 .8rem/1 inherit; cursor: pointer; }
-    .result-toggle:hover { background: rgba(255,255,255,.08); }
-    .result-toggle::after { content: "▾"; transition: transform .2s ease; }
-    .result-card.is-open .result-toggle::after { transform: rotate(180deg); }
-    .result-card { position: sticky; top: calc(var(--header-h) + 20px); overflow: hidden; color: var(--cream); background: var(--espresso); border: 1px solid rgba(255,255,255,.10); box-shadow: var(--shadow-md); }
-    .result-top { padding: 32px; border-bottom: 1px solid rgba(255,255,255,.10); }
-    .result-kicker { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: rgba(248,242,232,.58); font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; }
-    .live-dot { display: inline-flex; align-items: center; gap: 7px; }
-    .live-dot::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #8cc7a6; box-shadow: 0 0 0 5px rgba(140,199,166,.10); }
-    .result-price { margin: 18px 0 3px; font-family: Georgia, serif; font-size: clamp(3rem, 7vw, 5.4rem); line-height: 1; letter-spacing: -.05em; }
-    .result-range { color: rgba(248,242,232,.64); font-size: .88rem; }
-    .result-body { padding: 25px 32px 30px; }
     .breakdown { display: grid; gap: 12px; margin-bottom: 23px; }
-    .breakdown-row { display: flex; justify-content: space-between; gap: 18px; color: rgba(248,242,232,.68); font-size: .86rem; }
-    .breakdown-row strong { color: var(--cream); font-weight: 700; }
-    .breakdown-total { padding-top: 12px; border-top: 1px solid rgba(255,255,255,.10); }
-    .result-note { color: rgba(248,242,232,.52); font-size: .76rem; line-height: 1.5; }
-    .result-actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 20px; }
 
     .event-strip { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line-dark); border-radius: 24px; overflow: hidden; position: relative; z-index: 1; }
     .event-cell { padding: 28px 22px; border-right: 1px solid var(--line-dark); min-height: 180px; transition: background .2s ease; }
@@ -405,19 +384,17 @@
     .contact-panel::after { content: ""; position: absolute; width: 500px; height: 500px; border-radius: 50%; right: -260px; top: -280px; background: radial-gradient(circle, rgba(203,163,107,.30), transparent 67%); }
     .contact-grid { position: relative; z-index: 1; display: grid; grid-template-columns: .8fr 1.2fr; gap: clamp(35px, 7vw, 90px); }
     .contact-links { display: grid; gap: 12px; margin-top: 30px; }
-    .contact-link { display: flex; align-items: center; gap: 12px; color: rgba(248,242,232,.82);
-      min-height: 44px; }
+    .contact-link { display: flex; align-items: center; gap: 12px; color: var(--coffee); min-height: 44px; }
+    .contact-panel .contact-link { color: rgba(248,242,232,.82); }
     .contact-link svg { width: 18px; height: 18px; }
     .contact-form { display: grid; gap: 13px; }
-    .contact-form .input, .contact-form .select, .contact-form .textarea { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.16); color: var(--cream); }
-    .contact-form .input::placeholder, .contact-form .textarea::placeholder { color: rgba(248,242,232,.66); }
-    .contact-form .select option { color: var(--ink); }
+    .contact-form .input::placeholder, .contact-form .textarea::placeholder { color: var(--muted); }
     .textarea { min-height: 120px; resize: vertical; }
-    .form-status { min-height: 24px; font-size: .8rem; color: rgba(248,242,232,.62); }
+    .form-status { min-height: 24px; font-size: .8rem; color: var(--muted); }
     .contact-intro, .contact-direct-copy { color: rgba(248,242,232,.65); }
-    .privacy-consent { display: flex; gap: 10px; align-items: flex-start; color: rgba(248,242,232,.78); cursor: pointer; }
-    .privacy-consent a { color: var(--gold); text-underline-offset: 3px; }
-    .privacy-consent input { margin-top: 2px; width: 22px; height: 22px; flex: none; accent-color: var(--gold); }
+    .privacy-consent { display: flex; gap: 10px; align-items: flex-start; color: var(--muted); cursor: pointer; }
+    .privacy-consent a { color: var(--coffee); text-underline-offset: 3px; }
+    .privacy-consent input { margin-top: 2px; width: 22px; height: 22px; flex: none; accent-color: var(--coffee); }
     .contact-direct-action { display: flex; align-items: center; justify-content: center; min-height: 220px; }
     .service-choice-intro { margin-bottom: 15px; }
     .service-choice-grid, .extra-options { margin-top: 18px; }
@@ -452,23 +429,11 @@
     [data-reveal].revealed { opacity: 1; transform: none; }
 
     @media (max-width: 1020px) {.hero-grid, .intro-grid, .faq-wrap, .contact-grid, .availability-layout{ grid-template-columns: 1fr; }
-      .availability-layout-v4 { grid-template-columns: 1fr; }
-      .journey-steps { grid-template-columns: repeat(2, 1fr); }
-      .journey-head { align-items: start; flex-direction: column; }
       .availability-copy { position: static; }
       .hero { padding-top: calc(var(--header-h) + 55px); }
       .hero-copy { max-width: 780px; }
       .hero-stage { min-height: 560px; }
       .card-grid { grid-template-columns: repeat(2, 1fr); }
-      .calculator-grid { grid-template-columns: 1fr; }
-      /* Auf Mobile steht die Karte im Grid hinter dem ~800px hohen Formular.
-         Sie wandert deshalb nach vorn und klebt als kompakte Leiste oben --
-         sonst ist der Live-Preis waehrend der Eingabe nicht zu sehen. */
-      .result-card { order: -1; position: sticky; top: calc(var(--header-h) + 8px);
-        z-index: 60; box-shadow: var(--shadow-lg); }
-      .result-card .result-body { display: none; }
-      .result-card.is-open .result-body { display: block; }
-      .result-toggle { display: inline-flex; }
       .event-strip { grid-template-columns: repeat(2, 1fr); }
       .event-cell:nth-child(2) { border-right: 0; }
       .event-cell:nth-child(-n+2) { border-bottom: 1px solid var(--line-dark); }
@@ -497,15 +462,10 @@
       .hero-chip { right: -1%; bottom: 0; max-width: 210px; padding: 15px; }
       .steam { left: 7%; bottom: 20%; transform: scale(.75); }
       .trust-row { display: grid; grid-template-columns: 1fr 1fr; }
-      .section-head { align-items: start; flex-direction: column; }
+      .section-head h2 { max-width: none; }
       .card-grid, .choice-grid, .package-grid, .form-grid-2 { grid-template-columns: 1fr; }
       .service-card { min-height: 148px; }
       .service-icon { margin-bottom: 54px; }
-      .calculator-form { padding: 22px 18px; }
-      .calc-head { align-items: start; }
-      .step-indicator span:first-child { display: none; }
-      .result-top, .result-body { padding-inline: 23px; }
-      .result-actions { grid-template-columns: 1fr; }
       .event-strip { grid-template-columns: 1fr; }
       .event-cell { border-right: 0; border-bottom: 1px solid var(--line-dark); min-height: 145px; }
       .event-cell:nth-child(3) { border-bottom: 1px solid var(--line-dark); }
@@ -602,147 +562,6 @@
       box-shadow: 0 0 0 70px rgba(111,66,40,.025), 0 0 0 140px rgba(111,66,40,.018);
       pointer-events: none;
     }
-    .journey-panel {
-      position: relative;
-      z-index: 1;
-      padding: clamp(26px, 4vw, 52px);
-      border-radius: var(--radius-lg);
-      border: 1px solid rgba(43,27,18,.13);
-      background: rgba(255,253,248,.84);
-      box-shadow: var(--shadow-md);
-      -webkit-backdrop-filter: blur(18px);
-      backdrop-filter: blur(18px);
-    }
-    .journey-head {
-      display: grid;
-      grid-template-columns: minmax(0,.85fr) minmax(300px,.55fr);
-      gap: clamp(28px, 6vw, 74px);
-      align-items: end;
-      margin-bottom: 32px;
-    }
-    .journey-head h2 { margin-bottom: 0; }
-    .journey-head > p {
-      margin: 0;
-      color: var(--muted);
-      font-size: clamp(1rem, 1.7vw, 1.15rem);
-      line-height: 1.75;
-    }
-    .journey-progress {
-      display: grid;
-      grid-template-columns: auto minmax(160px,1fr);
-      gap: 18px;
-      align-items: center;
-      margin: 0 0 22px;
-      color: var(--muted);
-      font-size: .78rem;
-      font-weight: 800;
-      letter-spacing: .09em;
-      text-transform: uppercase;
-    }
-    .journey-progress-track {
-      height: 6px;
-      border-radius: 999px;
-      background: rgba(43,27,18,.08);
-      overflow: hidden;
-    }
-    .journey-progress-track i {
-      display: block;
-      width: 20%;
-      height: 100%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, var(--coffee), var(--caramel));
-      transition: width .35s ease;
-    }
-    .journey-steps {
-      position: relative;
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0,1fr));
-      gap: 12px;
-    }
-    .journey-steps::before {
-      content: "";
-      position: absolute;
-      top: 31px;
-      left: 7%;
-      right: 7%;
-      height: 1px;
-      background: rgba(43,27,18,.12);
-      z-index: 0;
-    }
-    .journey-step {
-      position: relative;
-      z-index: 1;
-      min-height: 164px;
-      padding: 19px 17px 18px;
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      background: rgba(255,255,255,.72);
-      display: grid;
-      grid-template-rows: auto auto 1fr;
-      align-content: start;
-      gap: 10px;
-      text-align: left;
-      cursor: pointer;
-      box-shadow: 0 10px 30px rgba(43,27,18,.035);
-      transition: transform .22s ease, box-shadow .22s ease, background .22s ease, border-color .22s ease, color .22s ease;
-    }
-    .journey-step:hover {
-      transform: translateY(-3px);
-      border-color: rgba(111,66,40,.28);
-      box-shadow: 0 18px 40px rgba(43,27,18,.09);
-    }
-    .journey-step .num {
-      width: 40px;
-      height: 40px;
-      display: grid;
-      place-items: center;
-      border-radius: 50%;
-      color: var(--coffee);
-      background: var(--paper);
-      border: 1px solid rgba(111,66,40,.18);
-      font-family: Georgia, serif;
-      font-size: .9rem;
-      font-weight: 700;
-      box-shadow: 0 8px 18px rgba(43,27,18,.07);
-    }
-    .journey-step strong { font-size: .96rem; line-height: 1.25; }
-    .journey-step > span:last-child { color: var(--muted); font-size: .82rem; line-height: 1.5; }
-    .journey-step.active {
-      color: var(--cream);
-      background: linear-gradient(145deg, var(--espresso), #3c2418);
-      border-color: transparent;
-      box-shadow: 0 22px 50px rgba(33,21,15,.24);
-      transform: translateY(-4px);
-    }
-    .journey-step.active .num {
-      color: var(--espresso);
-      background: var(--cream);
-      border-color: transparent;
-    }
-    .journey-step.active > span:last-child { color: rgba(248,242,232,.7); }
-    .journey-step.done:not(.active) {
-      background: rgba(183,121,73,.09);
-      border-color: rgba(183,121,73,.22);
-    }
-    .journey-step.done:not(.active) .num {
-      color: transparent;
-      position: relative;
-      background: rgba(183,121,73,.18);
-    }
-    .journey-step.done:not(.active) .num::after {
-      content: "✓";
-      position: absolute;
-      color: var(--coffee);
-      font-family: inherit;
-      font-size: 1rem;
-    }
-
-    .availability-layout-v4 {
-      display: grid;
-      grid-template-columns: minmax(280px,.62fr) minmax(560px,1.38fr);
-      gap: clamp(38px, 6vw, 82px);
-      align-items: start;
-    }
     .availability-copy {
       position: sticky;
       top: calc(var(--header-h) + 34px);
@@ -781,36 +600,6 @@
       background: rgba(255,253,248,.92);
       box-shadow: var(--shadow-lg);
     }
-    .private-calendar-head {
-      min-height: 104px;
-      padding: 26px 28px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 20px;
-      color: var(--cream);
-      background:
-        radial-gradient(circle at 90% 20%, rgba(203,163,107,.15), transparent 32%),
-        linear-gradient(145deg, #2a1810, #3a2116);
-    }
-    .private-calendar-head strong {
-      display: block;
-      font-family: Georgia, serif;
-      font-size: 1.38rem;
-      letter-spacing: -.01em;
-    }
-    .private-calendar-head span {
-      display: block;
-      margin-top: 5px;
-      color: rgba(248,242,232,.65);
-      font-size: .84rem;
-    }
-    .availability-calendar-body {
-      padding: clamp(18px, 3vw, 28px);
-      background:
-        radial-gradient(circle at 10% 0%, rgba(183,121,73,.09), transparent 32%),
-        linear-gradient(180deg, rgba(238,226,208,.45), rgba(255,253,248,.95));
-    }
     .availability-month-title {
       display: flex;
       justify-content: space-between;
@@ -829,17 +618,6 @@
       letter-spacing: .08em;
       text-transform: uppercase;
     }
-    .availability-footer {
-      padding: 22px 26px 24px;
-      border-top: 1px solid var(--line);
-      background: rgba(255,255,255,.64);
-    }
-    .availability-selection {
-      display: grid;
-      grid-template-columns: minmax(0,1fr) auto;
-      gap: 20px;
-      align-items: center;
-    }
     .availability-selection-copy { display: grid; gap: 4px; }
     .availability-selection-copy strong { font-size: 1rem; }
     .availability-selection-copy span { color: var(--muted); font-size: .84rem; }
@@ -853,85 +631,107 @@
     .availability-status.error { color: var(--danger); }
 
     @media (max-width: 1120px) {
-      .journey-steps { grid-template-columns: repeat(3, minmax(0,1fr)); }
-      .journey-steps::before { display: none; }
-      .availability-layout-v4 { grid-template-columns: .72fr 1.28fr; gap: 34px; }
     }
     @media (max-width: 860px) {
-      .journey-head { grid-template-columns: 1fr; align-items: start; }
-      .journey-steps { grid-template-columns: repeat(2, minmax(0,1fr)); }
-      .availability-layout-v4 { grid-template-columns: 1fr; }
       .availability-copy { position: static; padding-top: 0; }
     }
     @media (max-width: 650px) {
       .journey-section { padding: 58px 0; }
-      .journey-progress { grid-template-columns: 1fr; gap: 9px; }
-      .journey-steps {
-        grid-template-columns: 1fr;
-      }
-      .journey-step { min-height: 0; grid-template-columns: 44px 1fr; grid-template-rows: auto auto; column-gap: 13px; }
-      .journey-step .num { grid-row: 1 / 3; }
-      .journey-step > span:last-child { grid-column: 2; }
-      .private-calendar-head { padding: 22px 20px; }
-      .availability-calendar-body { padding: 12px; }
-      .availability-footer { padding: 18px; }
-      .availability-selection { grid-template-columns: 1fr; }
-      .availability-selection .btn { width: 100%; }
     }
-
-    /* v7: transparenter, sequentieller Sales-Flow */
-    .journey-dashboard { display: grid; grid-template-columns: .8fr 1.2fr; gap: 16px; margin-top: 22px; }
-    .journey-now, .journey-summary { border: 1px solid var(--line); border-radius: 20px; background: rgba(255,255,255,.66); padding: 18px 20px; }
-    .journey-now > span, .journey-summary-label { display: block; margin-bottom: 6px; color: var(--coffee); font-size: .7rem; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
-    .journey-now strong { display: block; font-family: Georgia, serif; font-size: 1.25rem; }
-    .journey-now p { margin: 7px 0 0; color: var(--muted); font-size: .86rem; }
-    .journey-summary { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; }
-    .journey-summary-label { grid-column: 1 / -1; margin-bottom: -2px; }
-    .journey-summary div { min-width: 0; padding-left: 13px; border-left: 1px solid var(--line); }
-    .journey-summary small { display: block; color: var(--muted); font-size: .67rem; text-transform: uppercase; letter-spacing: .08em; }
-    .journey-summary strong { display: block; margin-top: 4px; font-size: .84rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .journey-step.locked { opacity: .48; cursor: not-allowed; transform: none; box-shadow: none; }
-    .journey-step:disabled:hover { transform: none; border-color: var(--line); box-shadow: 0 10px 30px rgba(43,27,18,.035); }
-    .sales-flow-ready .sales-stage { display: none; }
-    .sales-flow-ready .sales-stage.is-active { display: block; animation: salesStageIn .36s ease both; }
     @keyframes salesStageIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-    .sales-stage { scroll-margin-top: calc(var(--header-h) + 30px); }
     .journey-stage { position: relative; padding: 36px 0 12px; }
     .visitor-note strong::before { background: var(--caramel); box-shadow: 0 0 0 5px rgba(183,121,73,.12); }
-    /* Label, Wert und Aktion brauchen echten Abstand -- sonst kleben
-       "4 Std." und "Termin aendern" aneinander. */
-    .calculator-context { display: flex; flex-wrap: wrap; align-items: baseline;
-      column-gap: 8px; row-gap: 2px; }
     .link-button { border: 0; padding: 6px 0; min-height: 44px; display: inline-flex; align-items: center; background: transparent; color: var(--coffee); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-weight: 750; }
     .schedule-readonly-card { min-height: 54px; position: relative; display: grid; align-content: center; gap: 2px; padding: 9px 90px 9px 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.66); }
     .schedule-readonly-card span { color: var(--muted); font-size: .78rem; }
     .schedule-readonly-card .link-button { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); }
     .form-grid-3 { display: grid; grid-template-columns: 1.1fr 1fr .7fr; gap: 13px; }
-    #kontakt.sales-stage .contact-grid { align-items: start; }
-    #kontakt.sales-stage::after { content: "Schritt 5 von 5"; position: absolute; top: 38px;
-      /* innerhalb der Panel-Polsterung, nicht auf dessen Kante */
-      right: calc(max(20px, (100vw - var(--max))/2) + 38px); color: rgba(248,242,232,.66); font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
     @media (max-width: 980px) {
-      .journey-dashboard { grid-template-columns: 1fr; }
-      .journey-summary { grid-template-columns: repeat(2, minmax(0,1fr)); }
       .form-grid-3 { grid-template-columns: 1fr 1fr; }
       .form-grid-3 > :first-child { grid-column: 1 / -1; }
     }
     @media (max-width: 680px) {
       .journey-section { padding: 52px 0; }
-      .journey-panel { padding: 22px 16px; }
-      .journey-head { grid-template-columns: 1fr; }
-      /* Verlauf am rechten Rand zeigt an, dass die Leiste weitergeht */
-      .journey-steps { display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
-        padding: 5px 2px 16px; scrollbar-width: thin;
-        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent);
-        mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent); }
-      .journey-steps::before { display: none; }
-      .journey-step { flex: 0 0 78%; min-height: 145px; scroll-snap-align: start; }
-      .journey-summary { grid-template-columns: 1fr; }
-      .journey-summary div { padding: 9px 0 0; border-left: 0; border-top: 1px solid var(--line); }
-      .availability-layout-v4 { gap: 26px; }
       .form-grid-3 { grid-template-columns: 1fr; }
       .form-grid-3 > :first-child { grid-column: auto; }
     }
 
+    /* ---------------- Konfigurator: Seitenleiste + Buehne ----------------
+       Eine Sektion: links Schrittleiste und Preis, rechts der aktive Schritt. */
+    .journey-section { padding: clamp(60px, 8vw, 110px) 0; }
+    .cfg-lead { margin-bottom: 30px; }
+    .split { display: grid; grid-template-columns: minmax(0, 310px) minmax(0, 1fr);
+      gap: 24px; align-items: start; }
+
+    .rail { position: sticky; top: calc(var(--header-h) + 16px); display: grid; gap: 14px; }
+    .rail-steps { border: 1px solid var(--line); border-radius: 22px;
+      background: rgba(255,255,255,.6); overflow: hidden; }
+    .rail-step { display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: center;
+      width: 100%; min-height: 56px; padding: 12px 16px; border: 0; border-bottom: 1px solid var(--line);
+      background: transparent; text-align: left; cursor: pointer; font: inherit; color: inherit;
+      transition: background .18s ease; }
+    .rail-step:last-child { border-bottom: 0; }
+    .rail-step:hover:not(:disabled) { background: rgba(183,121,73,.07); }
+    .rail-n { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
+      border: 1px solid var(--line); font-size: .76rem; font-weight: 850; color: var(--muted); }
+    .rail-step strong { display: block; font-size: .93rem; }
+    .rail-step em { display: block; font-style: normal; color: var(--muted); font-size: .78rem;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rail-step.is-done .rail-n { background: var(--coffee); border-color: var(--coffee); color: var(--cream); }
+    .rail-step.is-active { background: rgba(183,121,73,.12); }
+    .rail-step.is-active .rail-n { background: var(--espresso); border-color: var(--espresso); color: var(--cream); }
+    .rail-step:disabled { opacity: .5; cursor: not-allowed; }
+
+    .rail-price { padding: 20px 22px; border-radius: 22px; background: var(--espresso);
+      color: var(--cream); box-shadow: var(--shadow-md); }
+    .rail-price > small { font-size: .68rem; letter-spacing: .12em; text-transform: uppercase;
+      color: rgba(248,242,232,.7); }
+    .rail-total { margin: 5px 0 2px; font-family: Georgia, serif; font-size: clamp(2.2rem, 4vw, 2.9rem);
+      line-height: 1; letter-spacing: -.03em; }
+    .rail-range { margin: 0 0 14px; color: rgba(248,242,232,.7); font-size: .8rem; }
+    .rail-breakdown { margin: 0; padding: 14px 0 0; list-style: none; display: grid; gap: 7px;
+      border-top: 1px solid rgba(255,255,255,.14); font-size: .84rem; color: rgba(248,242,232,.8); }
+    .rail-breakdown li { display: flex; justify-content: space-between; gap: 12px; }
+    .rail-breakdown .rail-sum { margin-top: 5px; padding-top: 9px;
+      border-top: 1px solid rgba(255,255,255,.14); color: var(--cream); font-weight: 750; }
+    .rail-note { margin: 14px 0 0; color: rgba(248,242,232,.66); font-size: .76rem; line-height: 1.5; }
+    .rail-actions { display: flex; gap: 9px; margin-top: 16px; }
+    .rail-actions .btn-small { flex: 1; }
+
+    .stage { padding: clamp(20px, 3vw, 30px); border: 1px solid var(--line); border-radius: 26px;
+      background: var(--cream); box-shadow: var(--shadow-md); }
+    .stage-head { margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+    .stage-head h3 { margin: 0 0 3px; font-family: Georgia, serif; font-size: clamp(1.35rem, 2.4vw, 1.7rem); }
+    .stage-head p { margin: 0; }
+    .cfg-step { display: none; }
+    .cfg-step.is-active { display: block; animation: cfgStepIn .3s ease both; }
+    @keyframes cfgStepIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .stage-foot { display: flex; gap: 12px; margin-top: 24px; padding-top: 18px;
+      border-top: 1px solid var(--line); }
+    .stage-foot .btn:last-child { margin-left: auto; }
+
+    /* Rückschau im letzten Schritt */
+    .recap { margin-bottom: 22px; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+    .recap-row { display: grid; grid-template-columns: 130px 1fr auto; gap: 14px; align-items: center;
+      padding: 10px 16px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.5); }
+    .recap-row:last-child { border-bottom: 0; }
+    .recap-row small { color: var(--muted); font-size: .7rem; text-transform: uppercase;
+      letter-spacing: .09em; font-weight: 800; }
+    .recap-row > span { min-width: 0; overflow-wrap: break-word; font-size: .92rem; }
+
+    .cfg-contact-alt { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .cfg-contact-alt summary { cursor: pointer; color: var(--coffee); font-weight: 750; font-size: .9rem;
+      min-height: 44px; display: flex; align-items: center; }
+    .cfg-contact-alt .contact-links { margin-top: 10px; }
+
+    @media (max-width: 980px) {
+      .split { grid-template-columns: 1fr; }
+      /* Preis zuerst und klebend -- sonst ist er waehrend der Eingabe nicht zu sehen */
+      .rail { position: static; }
+      .rail-steps { order: 2; }
+      .rail-price { position: sticky; top: calc(var(--header-h) + 8px); z-index: 60; order: 1; }
+      .rail-breakdown, .rail-note { display: none; }
+      .rail-total { font-size: 2rem; }
+      .recap-row { grid-template-columns: 1fr auto; }
+      .recap-row small { grid-column: 1 / -1; }
+    }
