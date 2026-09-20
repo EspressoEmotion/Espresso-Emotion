@@ -4,10 +4,7 @@ h2 { font-size: clamp(2.15rem, 3.7vw, 3.6rem); line-height: 1.06; text-wrap: bal
 .hero { min-height: auto; padding-block: calc(var(--header-h) + 60px) 72px; }
 .hero h1 { font-size: clamp(3rem, 4.9vw, 4.6rem); line-height: 1.03; }
 .hero-grid { gap: clamp(32px, 5vw, 72px); }
-.hero-stage-team .hero-card { border-radius: 26px; }
-.hero-stage-team .hero-chip { max-width: none; margin-top: 20px; padding: 0 0 0 18px; border: 0; border-left: 2px solid var(--caramel); border-radius: 0; background: none; color: var(--ink); box-shadow: none; backdrop-filter: none; }
-.hero-stage-team .hero-chip p { color: var(--muted); }
-.hero-orbit { display: none; }
+.hero-stage-team .hero-card { width: calc(100% - 32px); margin-inline: auto; border-radius: 32px; }
 .trust-row { gap: 16px; margin-top: 30px; }
 .section-head { margin-bottom: 36px; }
 .section-head .lead { font-size: 1.08rem; }
@@ -59,8 +56,11 @@ h2 { font-size: clamp(2.15rem, 3.7vw, 3.6rem); line-height: 1.06; text-wrap: bal
 #leistungen .card-kicker { display: block; position: static; color: var(--coffee); margin-bottom: 20px; }
 #leistungen .service-card h3 { padding: 0; font-size: 1.14rem; }
 #leistungen .service-card p { font-size: .92rem; }
-.service-photo-grid { margin-top: 32px; }
+.service-photo-grid { margin-top: 32px; align-items: center; }
 .service-photo { height: 340px; min-height: 0; }
+.service-photo-coffee { width: 100%; max-width: 420px; height: auto; justify-self: center; }
+.service-photo-coffee img { display: block; height: auto; object-fit: contain; }
+.service-photo-coffee figcaption { position: static; padding: 24px 28px; background: var(--espresso); }
 
 /* Reasons: a calm comparative list; no circles or process connectors. */
 #warum-wir .reason-row { grid-template-columns: 32px minmax(0, .9fr) minmax(0, 1.1fr); gap: 28px; padding-block: 23px; }
@@ -99,7 +99,7 @@ h2 { font-size: clamp(2.15rem, 3.7vw, 3.6rem); line-height: 1.06; text-wrap: bal
 @media (max-width: 1100px) {
   #leistungen .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #ueber-uns .intro-grid { grid-template-columns: 1fr 1fr; gap: 22px 30px; }
-  #ueber-uns .story-photo-pair { grid-template-columns: 1fr; max-width: 340px; }
+  #ueber-uns .story-photo-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: none; }
   #familie .intro-grid { gap: 24px 36px; }
 }
 @media (max-width: 800px) {
