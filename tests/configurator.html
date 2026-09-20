@@ -118,6 +118,6 @@ frame.addEventListener('load', () => {
   });
   document.getElementById('status').textContent = `${count - failures}/${count} Tests bestanden; ${failures} Fehler.`;
 });
-frame.src = '../index.html';
+frame.src = '../index.html?regression=' + Date.now();
 </script>
 </html>
