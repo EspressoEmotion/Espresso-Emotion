@@ -505,6 +505,15 @@
     }
     .story-photo figcaption strong, .service-photo figcaption strong { font-family: Georgia, serif; font-size: 1.28rem; }
     .story-photo figcaption span, .service-photo figcaption span { color: rgba(248,242,232,.72); font-size: .9rem; }
+    .story-photo.story-photo-portrait {
+      width: 100%; max-width: 560px; min-height: 0; justify-self: center;
+    }
+    .story-photo-portrait img {
+      position: static; display: block; width: 100%; height: auto; object-fit: contain;
+    }
+    .story-photo-portrait figcaption {
+      position: static; padding: 24px 28px; background: var(--espresso);
+    }
     .service-photo-grid { display: grid; grid-template-columns: 1.08fr .92fr; gap: 18px; margin-top: 22px; }
     .service-photo { min-height: 430px; }
     .service-photo-coffee img { object-position: 52% center; }
