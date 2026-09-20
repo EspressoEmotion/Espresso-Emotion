@@ -17,10 +17,6 @@
         sparklingPerGuest: 6.5,
         wafflesPerGuest: 3,
         childcarePerChildHour: 20
-      },
-      availability: {
-        openingHour: 9,
-        closingHour: 21
       }
     };
 
@@ -33,7 +29,7 @@
       distance: 25,
       services: new Set(['coffee']),
       extras: new Set(),
-      children: 5,
+      children: 1,
       note: '',
       preferredDate: '',
       preferredTime: ''
@@ -154,7 +150,7 @@
         `Entfernung: ${calc.distance} km einfache Strecke ab Dortmund-Mengede`,
         `Leistungen: ${services}`,
         `Zusatzleistungen: ${extras}`,
-        calc.extras.has('childcare') ? `Kinderbetreuung: ${calc.children} Kinder` : '',
+        calc.extras.has('childcare') ? `Kinderbetreuung: ${calc.children} ${calc.children === 1 ? 'Kind' : 'Kinder'}` : '',
         calc.preferredDate ? `Wunschtermin: ${formatLongDate(calc.preferredDate)}${calc.preferredTime ? ` · ${calc.preferredTime} Uhr` : ''}` : '',
         calc.note ? `Besonderer Wunsch: ${calc.note}` : '',
         `Berechenbarer Richtwert: ${q.openItems.length ? 'ab ' : ''}${euro.format(q.total)}`,
@@ -232,8 +228,13 @@
       if (calc.step === TOTAL_STEPS) renderRecap();
       renderRail();
       updateJourneySummary();
-      if (options.scroll) {
-        document.getElementById('planen').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (options.scroll !== false) {
+        // Position the new panel after layout, independently of scroll anchoring.
+        requestAnimationFrame(() => {
+          const title = document.getElementById('stepTitle');
+          title.focus({ preventScroll: true });
+          title.closest('.stage').scrollIntoView({ behavior: 'instant', block: 'start' });
+        });
       }
     }
 
@@ -242,7 +243,7 @@
     guestInput.addEventListener('input', () => { calc.guests = Number(guestInput.value); document.getElementById('guestOutput').textContent = calc.guests; updateQuote(); renderRail(); });
     document.getElementById('duration').addEventListener('change', e => {
       calc.duration = Number(e.target.value);
-      applyScheduleTimeBounds(); updateQuote(); updateJourneySummary(); renderRail();
+      updateQuote(); updateJourneySummary(); renderRail();
     });
     document.getElementById('distance').addEventListener('input', e => { calc.distance = Math.max(0, Number(e.target.value || 0)); updateQuote(); renderRail(); });
     document.getElementById('note').addEventListener('input', e => {
@@ -343,17 +344,6 @@
       if (!date) return '';
       return date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     }
-    function applyScheduleTimeBounds() {
-      const cfg = CONFIG.availability || {};
-      const opening = Number(cfg.openingHour ?? 9);
-      const closing = Math.max(opening, Number(cfg.closingHour ?? 21) - calc.duration);
-      ['scheduleTime', 'contactTime'].forEach(id => {
-        const input = document.getElementById(id);
-        input.min = `${String(opening).padStart(2, '0')}:00`;
-        input.max = `${String(closing).padStart(2, '0')}:00`;
-      });
-    }
-
     function applyScheduleDateBounds() {
       const today = localDateKey(new Date());
       ['scheduleDate', 'contactDate'].forEach(id => {
@@ -406,7 +396,6 @@
       });
       updateQuote(); renderRail();
     });
-    applyScheduleTimeBounds();
     applyScheduleDateBounds();
 
     document.querySelectorAll('.faq-trigger').forEach(button => button.addEventListener('click', () => {
@@ -515,4 +504,4 @@
     document.querySelectorAll('[data-instagram-direct]').forEach(link => { link.href = CONFIG.instagramUrl; link.target = '_blank'; link.rel = 'noopener'; });
     document.querySelectorAll('[data-whatsapp-direct]').forEach(link => { link.href = `https://wa.me/${CONFIG.whatsappNumber}`; link.target = '_blank'; link.rel = 'noopener'; });
     document.getElementById('year').textContent = new Date().getFullYear();
-    setStep(1, { syncJourney: false }); updateQuote(); updateJourneySummary();
+    setStep(1, { scroll: false }); updateQuote(); updateJourneySummary();

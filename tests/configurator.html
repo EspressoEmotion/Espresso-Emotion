@@ -46,6 +46,26 @@ frame.addEventListener('load', () => {
     click('nextStep');
     assert(byId('stepTitle').textContent === 'Anlass', 'Korrektur entsperrt Navigation nicht');
   });
+  test('Startzeiten sind unabhängig von Tageszeit und Dauer gültig', () => {
+    for (const duration of ['2','3','4','5','6']) {
+      edit('duration', duration, 'change');
+      for (const time of ['00:00','06:30','18:00','23:59']) {
+        edit('scheduleTime', time);
+        assert(byId('scheduleTime').checkValidity() && byId('contactTime').checkValidity(), 'Ungültige Zeit: ' + time);
+        assert(byId('contactTime').value === time, 'Uhrzeit nicht synchronisiert');
+      }
+    }
+    click('useQuote'); assert(quote().includes('23:59 Uhr'), 'Späte Startzeit fehlt');
+    edit('duration','4','change'); edit('scheduleTime','14:00');
+  });
+  test('Kinderbetreuung für ein Kind wird korrekt berechnet', () => {
+    const extra = doc.querySelector('input[value="childcare"]');
+    extra.click(); edit('childrenCount','1');
+    assert(byId('childrenCount').checkValidity(), 'Ein Kind ist ungültig');
+    assert(win.calculateQuote().total === 1530, 'Ein Kind für vier Stunden muss 80 Euro kosten');
+    click('useQuote'); assert(quote().includes('Kinderbetreuung: 1 Kind'), 'Kinderzahl fehlt');
+    extra.click();
+  });
   test('Alle sechs Anlässe werden korrekt übernommen', () => {
     for (const radio of doc.querySelectorAll('input[name="event"]')) {
       radio.click(); click('useQuote');

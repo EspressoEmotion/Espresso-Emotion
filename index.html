@@ -244,7 +244,7 @@
 
 <div class="stage panel">
 <div class="stage-head">
-<h3 id="stepTitle">Termin &amp; Uhrzeit</h3>
+<h3 id="stepTitle" tabindex="-1">Termin &amp; Uhrzeit</h3>
 <p class="small muted" id="stepHint">Datum, Startzeit und Dauer wählen.</p>
 </div>
 <div class="cfg-step is-active" data-step="1"><div class="form-grid-3">
@@ -291,7 +291,7 @@
 <label class="addon-card"><input name="extra" type="checkbox" value="decor"/><strong>Dekoration &amp; Floristik</strong><span>Passend zu Anlass, Location und gewünschtem Stil</span><b>nach individueller Absprache</b></label>
 </div>
 <div class="form-grid-2 extra-options" id="childcareOptions" hidden>
-<div class="form-group"><label class="field-label" for="childrenCount"><span>Anzahl betreuter Kinder</span><small>max. 20</small></label><input class="input" id="childrenCount" inputmode="numeric" min="1" max="20" type="number" value="5"/></div>
+<div class="form-group"><label class="field-label" for="childrenCount"><span>Anzahl betreuter Kinder</span><small>1–20 Kinder</small></label><input class="input" id="childrenCount" inputmode="numeric" min="1" max="20" step="1" type="number" value="1"/></div>
 <div class="form-group"><span class="field-label"><span>Kosten Kinderbetreuung</span></span><div class="schedule-readonly-card"><strong id="childcarePricePreview">wird berechnet</strong><span>20 € je Kind und gebuchter Stunde</span></div></div>
 </div>
 <div class="form-group wish-group"><label class="field-label" for="note"><span>Besonderer Wunsch</span><small>optional</small></label><textarea class="textarea" id="note" placeholder="Zum Beispiel: besondere Dekoration, Allergien, längere Einsatzdauer oder individuelle Getränkewünsche …"></textarea></div>
@@ -381,6 +381,6 @@
 <div class="modal-foot"><span id="modalCaption"></span><button aria-label="Schließen" class="modal-close" id="modalClose" type="button">×</button></div>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="assets/js/main.js?v=20260920-2"></script>
+<script src="assets/js/main.js?v=20260920-3"></script>
 </body>
 </html>
