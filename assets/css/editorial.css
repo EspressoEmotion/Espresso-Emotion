@@ -1,0 +1,142 @@
+/* Section-specific composition. Copy, photos and configurator behavior stay intact. */
+.section { padding-block: 88px; }
+h2 { font-size: clamp(2.15rem, 3.7vw, 3.6rem); line-height: 1.06; text-wrap: balance; }
+.hero { min-height: auto; padding-block: calc(var(--header-h) + 60px) 72px; }
+.hero h1 { font-size: clamp(3rem, 4.9vw, 4.6rem); line-height: 1.03; }
+.hero-grid { gap: clamp(32px, 5vw, 72px); }
+.hero-stage-team .hero-card { border-radius: 26px; }
+.hero-stage-team .hero-chip { max-width: none; margin-top: 20px; padding: 0 0 0 18px; border: 0; border-left: 2px solid var(--caramel); border-radius: 0; background: none; color: var(--ink); box-shadow: none; backdrop-filter: none; }
+.hero-stage-team .hero-chip p { color: var(--muted); }
+.hero-orbit { display: none; }
+.trust-row { gap: 16px; margin-top: 30px; }
+.section-head { margin-bottom: 36px; }
+.section-head .lead { font-size: 1.08rem; }
+.quote { font-size: clamp(1.65rem, 2.6vw, 2.25rem); line-height: 1.24; }
+/* These repeat existing service labels and inquiry links without adding information. */
+.marquee, .floating-cta { display: none; }
+
+/* Brand introduction: a quotation and a quiet set of editorial notes. */
+#wer-wir-sind .feature-stack { margin-top: 26px; gap: 20px; }
+#wer-wir-sind .feature-line { display: block; border: 0; padding: 0 0 0 18px; border-left: 2px solid var(--gold); }
+#wer-wir-sind .feature-num { display: none; }
+#wer-wir-sind .feature-line h3 { font-family: Georgia, serif; font-size: 1.3rem; font-weight: 400; }
+#wer-wir-sind .story-photo-wide { min-height: 0; aspect-ratio: 2048 / 1152; max-height: 460px; }
+#wer-wir-sind .story-photo-wide img { object-position: center; }
+
+/* People: biography beside two portraits, family story beside one full photo. */
+#ueber-uns .intro-grid { grid-template-columns: 1fr 1.2fr; gap: 24px 48px; }
+#ueber-uns .intro-grid > :nth-child(2) { grid-column: 1; grid-row: 2; }
+#ueber-uns .intro-grid > :nth-child(3) { grid-column: 1; grid-row: 3; }
+#ueber-uns .story-photo-pair { grid-column: 2; grid-row: 2 / 4; gap: 16px; margin: 0; align-self: center; align-items: stretch; }
+#ueber-uns .story-photo { display: flex; flex-direction: column; border-radius: 18px; box-shadow: var(--shadow-sm); }
+#ueber-uns .story-photo figcaption { flex: 1; padding: 20px 16px; }
+#ueber-uns .story-photo figcaption strong { font-size: 1.12rem; }
+#ueber-uns .story-photo figcaption span { font-size: .82rem; }
+#familie .intro-grid { grid-template-columns: .9fr 1.1fr; gap: 24px 64px; }
+#familie .intro-grid > :nth-child(2) { grid-column: 2; grid-row: 2; align-self: end; }
+#familie .intro-grid > :nth-child(3) { grid-column: 2; grid-row: 3; }
+#familie .story-photo { grid-column: 1; grid-row: 2 / 4; margin: 0; max-width: 420px; justify-self: start; }
+
+/* Vision: one centered statement followed by three unboxed ideas. */
+#vision { background: var(--espresso); color: var(--cream); border: 0; }
+#vision .intro-grid { display: block; }
+#vision .section-intro-head { text-align: center; }
+#vision h2 { max-width: 24ch; margin-inline: auto; }
+#vision .eyebrow { color: var(--gold); }
+#vision .quote { max-width: none; margin: 28px 0 16px; text-align: center; color: var(--gold); font-style: italic; }
+#vision .lead { max-width: 54ch; margin: 0 auto 46px; text-align: center; color: rgba(248,242,232,.8); }
+#vision .feature-stack { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px; }
+#vision .feature-line { display: block; border: 0; padding: 0; text-align: center; }
+#vision .feature-num { display: none; }
+#vision .feature-line h3 { font-family: Georgia, serif; font-size: 1.7rem; font-weight: 400; color: var(--cream); }
+#vision .feature-line p { color: rgba(248,242,232,.76); font-size: .95rem; max-width: 32ch; margin-inline: auto; }
+
+/* Services are the only editorial section using individual cards. */
+#leistungen .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+#leistungen .service-card { min-height: 0; padding: 24px; border-radius: 14px; box-shadow: none; }
+#leistungen .service-card:hover { transform: none; box-shadow: none; }
+#leistungen .service-card::after { display: none; }
+#leistungen .card-kicker { display: block; position: static; color: var(--coffee); margin-bottom: 20px; }
+#leistungen .service-card h3 { padding: 0; font-size: 1.14rem; }
+#leistungen .service-card p { font-size: .92rem; }
+.service-photo-grid { margin-top: 32px; }
+.service-photo { height: 340px; min-height: 0; }
+
+/* Reasons: a calm comparative list; no circles or process connectors. */
+#warum-wir .reason-row { grid-template-columns: 32px minmax(0, .9fr) minmax(0, 1.1fr); gap: 28px; padding-block: 23px; }
+#warum-wir .reason-number { font-family: inherit; font-size: .8rem; font-weight: 600; letter-spacing: .08em; }
+#warum-wir .reason-row h3 { font-size: 1.15rem; }
+
+/* Booking process: four connected stations, not another vertical benefits list. */
+#so-einfach-gehts { background: var(--cream-2); }
+#so-einfach-gehts .intro-grid { display: block; }
+#so-einfach-gehts .section-intro-head { max-width: 720px; }
+#so-einfach-gehts .quote { font: inherit; font-size: 1.1rem; color: var(--muted); max-width: none; margin: 20px 0 46px; }
+#so-einfach-gehts .feature-stack { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; }
+#so-einfach-gehts .feature-line { display: block; position: relative; border: 0; padding: 0 26px 0 0; }
+#so-einfach-gehts .feature-line::before { content: ""; position: absolute; top: 23px; left: 0; width: 100%; border-top: 1px solid rgba(111,66,40,.3); }
+#so-einfach-gehts .feature-line:last-child::before { display: none; }
+#so-einfach-gehts .feature-num { position: relative; z-index: 1; width: 48px; height: 48px; margin-bottom: 26px; background: var(--espresso); color: var(--cream); border: 0; font-family: inherit; font-size: .82rem; }
+#so-einfach-gehts .feature-line h3 { max-width: 19ch; font-size: 1.15rem; }
+#so-einfach-gehts .feature-line p { font-size: .94rem; padding-right: 10px; }
+
+/* Event contexts remain a compact dark band rather than a second card grid. */
+.event-strip { border: 0; border-radius: 0; gap: 28px; }
+.event-cell { min-height: 0; padding: 0; border: 0; }
+.event-cell:hover { background: none; }
+.event-cell > span { display: none; }
+.event-cell h3 { font-family: Georgia, serif; font-weight: 400; font-size: 1.4rem; }
+.event-cell p { font-size: .92rem; color: rgba(248,242,232,.78); }
+
+/* Gallery has the feel of a contact sheet, distinct from the story portraits. */
+.gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: auto; gap: 20px; align-items: start; }
+.gallery .gallery-item { grid-column: auto; grid-row: auto; border-radius: 0; box-shadow: none; overflow: visible; background: none; text-align: left; }
+.gallery .gallery-item img { height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 12px; }
+.gallery .gallery-item:hover img { transform: none; filter: brightness(1.04); }
+.gallery .gallery-overlay { position: static; display: block; padding: 14px 0 0; background: none; color: var(--ink); }
+.gallery .gallery-overlay strong { font-size: 1.06rem; }
+
+@media (max-width: 1100px) {
+  #leistungen .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #ueber-uns .intro-grid { grid-template-columns: 1fr 1fr; gap: 22px 30px; }
+  #ueber-uns .story-photo-pair { grid-template-columns: 1fr; max-width: 340px; }
+  #familie .intro-grid { gap: 24px 36px; }
+}
+@media (max-width: 800px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .hero h1 { font-size: clamp(2.7rem, 7vw, 4.4rem); }
+  .hero-stage-team { max-width: 660px; margin-top: 0; }
+  #ueber-uns .intro-grid, #familie .intro-grid { display: flex; flex-direction: column; gap: 22px; }
+  #ueber-uns .story-photo-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: none; width: 100%; }
+  #familie .story-photo { align-self: center; width: min(100%, 460px); }
+  #vision .feature-stack { gap: 24px; }
+  #so-einfach-gehts .feature-stack { grid-template-columns: 1fr; gap: 0; }
+  #so-einfach-gehts .feature-line { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 22px; padding: 0 0 34px; }
+  #so-einfach-gehts .feature-line::before { top: 0; bottom: 0; left: 23px; width: 0; border-top: 0; border-left: 1px solid rgba(111,66,40,.3); }
+  #so-einfach-gehts .feature-line:last-child { padding-bottom: 0; }
+  #so-einfach-gehts .feature-num { margin: 0; }
+  #so-einfach-gehts .feature-line h3 { max-width: none; }
+  .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .event-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .event-cell:nth-child(n) { border: 0; }
+}
+@media (max-width: 600px) {
+  .section { padding-block: 62px; }
+  h2 { font-size: clamp(2rem, 8.8vw, 2.8rem); }
+  .hero { padding-block: calc(var(--header-h) + 34px) 46px; }
+  .hero h1 { font-size: clamp(2.6rem, 11vw, 3.5rem); }
+  .hero-stage-team .hero-chip { margin-top: 16px; }
+  #wer-wir-sind .story-photo-wide { aspect-ratio: 4 / 3; }
+  #ueber-uns .story-photo-pair { grid-template-columns: 1fr; max-width: 460px; }
+  #vision .feature-stack { grid-template-columns: 1fr; gap: 30px; }
+  #vision .lead { margin-bottom: 38px; }
+  #leistungen .card-grid { grid-template-columns: 1fr; }
+  #leistungen .card-kicker { margin-bottom: 12px; }
+  #warum-wir .reason-row { grid-template-columns: 26px minmax(0, 1fr); gap: 8px 14px; }
+  #warum-wir .reason-row h3 { font-size: 1.08rem; }
+  #warum-wir .reason-row p { grid-column: 2; }
+  #so-einfach-gehts .quote { margin-bottom: 32px; }
+  .event-strip { grid-template-columns: 1fr; gap: 26px; }
+  .gallery { gap: 24px 14px; }
+  .gallery .gallery-overlay strong { font-size: .95rem; }
+}
