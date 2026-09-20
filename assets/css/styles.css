@@ -755,3 +755,15 @@
     @media (max-width: 680px) {
       .story-photo-pair { grid-template-columns: 1fr; max-width: 560px; }
     }
+
+    /* Open numbered list distinguishes our approach from service cards. */
+    .reasons-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+    .reason-row { display: grid; grid-template-columns: 48px minmax(240px, .9fr) minmax(0, 1.1fr); align-items: baseline; gap: 28px; padding: 25px 0; border-bottom: 1px solid var(--line); }
+    .reason-number { font-family: Georgia, serif; font-size: 1.6rem; line-height: 1; color: var(--caramel); }
+    .reason-row h3 { margin: 0; font-size: clamp(1.15rem, 1.7vw, 1.4rem); }
+    .reason-row p { margin: 0; color: var(--muted); }
+    @media (max-width: 760px) {
+      .reason-row { grid-template-columns: 34px minmax(0, 1fr); gap: 8px 16px; padding: 22px 0; }
+      .reason-number { grid-row: 1 / 3; }
+      .reason-row p { grid-column: 2; }
+    }
