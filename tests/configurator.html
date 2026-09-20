@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
+<title>Konfigurator – Regressionstests</title>
+<h1>Konfigurator – Regressionstests</h1>
+<p>Über einen lokalen HTTP-Server öffnen. Es werden keine Nachrichten versendet.</p>
+<ol id="results"></ol>
+<p id="status">Tests laufen …</p>
+<iframe id="site" title="Konfigurator-Testversion" width="1100" height="700"></iframe>
+<script>
+const frame = document.getElementById('site');
+frame.addEventListener('load', () => {
+  const win = frame.contentWindow;
+  const doc = frame.contentDocument;
+  const byId = id => doc.getElementById(id);
+  let failures = 0;
+  let count = 0;
+  function assert(condition, message) { if (!condition) throw new Error(message); }
+  function test(name, run) {
+    count++;
+    const item = document.createElement('li');
+    try { run(); item.textContent = 'PASS: ' + name; }
+    catch (error) { failures++; item.textContent = 'FAIL: ' + name + ' – ' + error.message; }
+    document.getElementById('results').append(item);
+  }
+  function edit(id, value, event = 'input') {
+    byId(id).value = value;
+    byId(id).dispatchEvent(new win.Event(event, { bubbles: true }));
+  }
+  const quote = () => byId('contactQuote').value;
+  const click = id => byId(id).click();
+  const selectedEvent = () => doc.querySelector('input[name="event"]:checked').value;
+  const future = new Date(); future.setDate(future.getDate() + 30);
+  const futureKey = win.localDateKey(future);
+
+  test('Vergangenes Datum blockiert Weiter und direkte Übernahme', () => {
+    edit('scheduleDate', '2020-01-01');
+    click('nextStep'); click('useQuote');
+    assert(byId('stepTitle').textContent === 'Termin & Uhrzeit', 'Ungültiger Termin wurde übernommen');
+    assert(!byId('scheduleDate').checkValidity(), 'Datum ist nicht als ungültig markiert');
+  });
+  test('Heute und zukünftige Termine sind gültig', () => {
+    edit('scheduleDate', win.localDateKey(new Date()));
+    assert(byId('scheduleDate').checkValidity(), 'Heute ist ungültig');
+    edit('scheduleDate', futureKey); edit('scheduleTime', '14:00');
+    click('nextStep');
+    assert(byId('stepTitle').textContent === 'Anlass', 'Korrektur entsperrt Navigation nicht');
+  });
+  test('Alle sechs Anlässe werden korrekt übernommen', () => {
+    for (const radio of doc.querySelectorAll('input[name="event"]')) {
+      radio.click(); click('useQuote');
+      assert(byId('contactEvent').value === radio.value, 'Fehlende Zuordnung: ' + radio.value);
+      assert(quote().includes(byId('contactEvent').selectedOptions[0].textContent), 'Anlass fehlt in Kalkulation');
+    }
+  });
+  test('Änderungen in der Anfrage aktualisieren Konfigurator, Zusammenfassung und Kalkulation', () => {
+    edit('contactEvent', 'birthday', 'change');
+    edit('contactDate', futureKey); edit('contactTime', '13:00');
+    assert(selectedEvent() === 'birthday', 'Anlass im Konfigurator ist veraltet');
+    assert(byId('scheduleDate').value === futureKey && byId('scheduleTime').value === '13:00', 'Termin ist veraltet');
+    assert(byId('recap').textContent.includes('Geburtstag'), 'Zusammenfassung ist veraltet');
+    assert(quote().includes('Anlass: Geburtstag') && quote().includes('13:00 Uhr'), 'Kalkulation ist veraltet');
+  });
+  test('Nachricht bleibt bei erneuter Übernahme und Navigation unverändert', () => {
+    edit('contactMessage', 'Bitte Hafermilch & eine ruhige Ecke.');
+    click('prevStep'); edit('note', 'Allergien vorab besprechen'); click('nextStep'); click('useQuote');
+    assert(byId('contactMessage').value === 'Bitte Hafermilch & eine ruhige Ecke.', 'Nachricht überschrieben');
+    assert(quote().includes('Allergien vorab besprechen'), 'Besonderer Wunsch fehlt');
+    assert(byId('contactQuote').readOnly, 'Kalkulation kann manuell veralten');
+  });
+  test('Gelöschte Termine bleiben auch nach erneuter Übernahme leer', () => {
+    edit('contactDate', ''); edit('contactTime', ''); click('useQuote');
+    assert(byId('scheduleDate').value === '' && byId('scheduleTime').value === '', 'Termin wurde wiederhergestellt');
+    assert(!quote().includes('Wunschtermin:'), 'Alter Termin bleibt in Kalkulation');
+  });
+  test('Vergangenes Datum im Anfrageformular ist ungültig', () => {
+    edit('contactDate', '2020-01-01');
+    assert(!byId('contactDate').checkValidity(), 'Kontakttermin ist gültig');
+    assert(!win.validateSchedule(true), 'Prüfung vor Export lässt Termin durch');
+    edit('contactDate', futureKey);
+    assert(byId('contactDate').checkValidity(), 'Fehler bleibt nach Korrektur bestehen');
+  });
+  test('Matcha setzt Kaffee voraus; Abwahl entfernt auch den Aufpreis', () => {
+    const coffee = doc.querySelector('input[name="service"][value="coffee"]');
+    const matcha = doc.querySelector('input[name="service"][value="matcha"]');
+    matcha.click();
+    assert(win.calculateQuote().total === 2170, 'Kaffee + Matcha falsch berechnet');
+    coffee.click();
+    assert(matcha.disabled && !matcha.checked, 'Upgrade bleibt ohne Kaffee aktiv');
+    assert(win.calculateQuote().total === 250, 'Aufpreis bleibt erhalten');
+    coffee.click();
+    assert(!matcha.disabled && !matcha.checked, 'Upgrade wird unerwartet wiederhergestellt');
+  });
+  test('Schnellwahl berücksichtigt die Matcha-Abhängigkeit', () => {
+    doc.querySelector('[data-package="sparkling"]').click();
+    assert(doc.querySelector('input[value="matcha"]').disabled, 'Matcha bei Sekt verfügbar');
+    doc.querySelector('[data-package="matcha"]').click();
+    assert(doc.querySelector('input[value="coffee"]').checked && doc.querySelector('input[value="matcha"]').checked, 'Paket unvollständig');
+    doc.querySelector('[data-package="coffee"]').click();
+  });
+  test('Anfahrtsgrenzen 30/31/50/51/100/101 km bleiben korrekt', () => {
+    for (const [km, cost] of [[30,0],[31,20],[50,20],[51,50],[100,50],[101,0]]) {
+      edit('distance', String(km));
+      const result = win.calculateQuote();
+      assert(result.travelCost === cost && result.total === 1450 + cost, 'Falscher Preis bei ' + km + ' km');
+      assert(result.openItems.includes('Anfahrt über 100 km') === (km > 100), 'Fehlender Anfragehinweis');
+    }
+  });
+  test('E-Mail enthält aktuelle Konfiguration und persönliche Nachricht genau einmal', () => {
+    edit('contactName', 'Konfigurator Test'); edit('contactEmail', 'test@example.com');
+    edit('contactEvent', 'fair', 'change'); edit('contactDate', futureKey);
+    const mail = new URL(win.buildInquiryMailto());
+    const body = mail.searchParams.get('body');
+    assert(mail.searchParams.get('subject').includes('Messe / Tagung'), 'Betreff enthält falschen Anlass');
+    assert(body.includes(quote()), 'Aktuelle Kalkulation fehlt');
+    assert(body.split('Bitte Hafermilch & eine ruhige Ecke.').length === 2, 'Nachricht fehlt oder ist doppelt');
+    assert(!body.includes('2020') && !body.includes('Geburtstag'), 'Veraltete Angaben in E-Mail');
+  });
+  document.getElementById('status').textContent = `${count - failures}/${count} Tests bestanden; ${failures} Fehler.`;
+});
+frame.src = '../index.html';
+</script>
+</html>

@@ -31,6 +31,14 @@ Danach ist die Website unter `http://localhost:8000` erreichbar. Ein Öffnen der
 
 Nach Änderungen an CSS oder JavaScript sollte die Seite über diesen HTTP-Server neu geladen werden, damit relative Pfade wie `assets/css/styles.css` und `assets/js/main.js` korrekt aufgelöst werden.
 
+### Konfigurator testen
+
+Bei laufendem lokalen Server `http://localhost:8000/tests/configurator.html` öffnen.
+Die Regressionstests prüfen Datumsvalidierung, alle Anlass-Zuordnungen, die Synchronisierung
+zwischen Konfigurator und Anfrage, den Erhalt persönlicher Nachrichten, die Abhängigkeit
+des Matcha-Upgrades, Anfahrtspreise und den erzeugten E-Mail-Text. Sie versenden keine Nachrichten.
+Das Ergebnis wird direkt auf der Testseite angezeigt; zusätzliche Abhängigkeiten sind nicht nötig.
+
 ## GitHub Pages
 
 1. Repository auf GitHub pushen.

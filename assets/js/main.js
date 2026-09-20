@@ -114,6 +114,7 @@
     }
 
     function updateQuote() {
+      syncServiceDependencies();
       latestQuote = calculateQuote();
       const q = latestQuote;
       const priceEl = document.getElementById('priceTotal');
@@ -141,7 +142,7 @@
     }
 
     function quoteText() {
-      const q = latestQuote || calculateQuote();
+      const q = calculateQuote();
       const services = [...calc.services].map(k => serviceData[k].label).join(', ');
       const extras = calc.extras.size ? [...calc.extras].map(k => extraData[k].label).join(', ') : 'keine';
       return [
@@ -218,6 +219,7 @@
     }
 
     function setStep(step, options = {}) {
+      if (step > 1 && !validateSchedule(calc.step === TOTAL_STEPS)) return;
       calc.step = Math.max(1, Math.min(TOTAL_STEPS, step));
       maxUnlocked = Math.max(maxUnlocked, calc.step);
       document.querySelectorAll('.cfg-step').forEach(el =>
@@ -243,12 +245,22 @@
       applyScheduleTimeBounds(); updateQuote(); updateJourneySummary(); renderRail();
     });
     document.getElementById('distance').addEventListener('input', e => { calc.distance = Math.max(0, Number(e.target.value || 0)); updateQuote(); renderRail(); });
-    document.getElementById('note').addEventListener('input', e => calc.note = e.target.value.trim());
+    document.getElementById('note').addEventListener('input', e => {
+      calc.note = e.target.value.trim();
+      updateJourneySummary();
+    });
     document.querySelectorAll('input[name="service"]').forEach(input => input.addEventListener('change', () => {
       if (input.checked) calc.services.add(input.value); else calc.services.delete(input.value);
       document.querySelectorAll('.package-card').forEach(btn => btn.classList.remove('active'));
       updateQuote(); renderRail();
     }));
+    function syncServiceDependencies() {
+      const hasCoffee = calc.services.has('coffee');
+      if (!hasCoffee) calc.services.delete('matcha');
+      const matcha = document.querySelector('input[name="service"][value="matcha"]');
+      matcha.disabled = !hasCoffee;
+      matcha.checked = calc.services.has('matcha');
+    }
     function syncConditionalExtras() {
       const wrap = document.getElementById('childcareOptions');
       if (wrap) wrap.hidden = !calc.extras.has('childcare');
@@ -289,14 +301,27 @@
       btn.addEventListener('click', () => { if (!btn.disabled) setStep(Number(btn.dataset.journey)); }));
 
     function fillContactFromQuote(options = {}) {
-      document.getElementById('contactEvent').value = eventData[calc.event].label;
-      if (calc.preferredDate) document.getElementById('contactDate').value = calc.preferredDate;
-      if (calc.preferredTime) document.getElementById('contactTime').value = calc.preferredTime;
-      document.getElementById('contactMessage').value = quoteText();
+      if (!validateSchedule(calc.step === TOTAL_STEPS)) return false;
+      syncContactFromQuote();
       if (!options.silent) showToast('Konfiguration wurde in die Anfrage übernommen.');
+      return true;
     }
-    document.getElementById('useQuote').addEventListener('click', () => { fillContactFromQuote(); setStep(TOTAL_STEPS); });
+    function syncContactFromQuote() {
+      document.getElementById('contactEvent').value = calc.event;
+      syncFieldValue('contactDate', calc.preferredDate);
+      syncFieldValue('contactTime', calc.preferredTime);
+      document.getElementById('contactQuote').value = quoteText();
+    }
+    function syncFieldValue(id, value) {
+      const input = document.getElementById(id);
+      // Do not reset a date/time input while the user is editing a segment.
+      if (input.value !== value) input.value = value;
+    }
+    document.getElementById('useQuote').addEventListener('click', () => {
+      if (fillContactFromQuote()) setStep(TOTAL_STEPS);
+    });
     document.getElementById('copyQuote').addEventListener('click', async () => {
+      if (!validateSchedule(calc.step === TOTAL_STEPS)) return;
       try { await navigator.clipboard.writeText(quoteText()); showToast('Kalkulation kopiert.'); }
       catch { showToast('Kopieren nicht möglich – bitte Text in der Anfrage verwenden.'); }
     });
@@ -322,10 +347,33 @@
       const cfg = CONFIG.availability || {};
       const opening = Number(cfg.openingHour ?? 9);
       const closing = Math.max(opening, Number(cfg.closingHour ?? 21) - calc.duration);
-      const input = document.getElementById('scheduleTime');
-      if (!input) return;
-      input.min = `${String(opening).padStart(2, '0')}:00`;
-      input.max = `${String(closing).padStart(2, '0')}:00`;
+      ['scheduleTime', 'contactTime'].forEach(id => {
+        const input = document.getElementById(id);
+        input.min = `${String(opening).padStart(2, '0')}:00`;
+        input.max = `${String(closing).padStart(2, '0')}:00`;
+      });
+    }
+
+    function applyScheduleDateBounds() {
+      const today = localDateKey(new Date());
+      ['scheduleDate', 'contactDate'].forEach(id => {
+        const input = document.getElementById(id);
+        input.min = today;
+        input.setCustomValidity(input.value && input.value < today
+          ? 'Bitte wählen Sie heute oder ein Datum in der Zukunft.' : '');
+      });
+    }
+
+    function validateSchedule(inContact = false) {
+      applyScheduleDateBounds();
+      const prefix = inContact ? 'contact' : 'schedule';
+      const invalid = ['Date', 'Time'].map(part => document.getElementById(prefix + part))
+        .find(input => !input.checkValidity());
+      if (!invalid) return true;
+      // Reveal the date/time fields before invoking native browser validation.
+      if (!inContact && calc.step !== 1) setStep(1, { scroll: true });
+      invalid.reportValidity();
+      return false;
     }
 
     function updateJourneySummary() {
@@ -334,19 +382,32 @@
       const timeContext = document.getElementById('timeContext');
       if (timeContext) timeContext.textContent = calc.preferredTime
         ? `Beginn um ${calc.preferredTime} Uhr` : 'Startzeit noch offen';
+      syncContactFromQuote();
+      if (calc.step === TOTAL_STEPS) renderRecap();
     }
 
-    document.getElementById('scheduleDate').addEventListener('change', event => {
-      calc.preferredDate = event.target.value;
-      document.getElementById('contactDate').value = event.target.value;
-      updateJourneySummary(); renderRail();
+    ['schedule', 'contact'].forEach(prefix => {
+      document.getElementById(prefix + 'Date').addEventListener('input', event => {
+        calc.preferredDate = event.target.value;
+        syncFieldValue('scheduleDate', calc.preferredDate);
+        updateJourneySummary(); renderRail(); applyScheduleDateBounds();
+      });
+      document.getElementById(prefix + 'Time').addEventListener('input', event => {
+        calc.preferredTime = event.target.value;
+        syncFieldValue('scheduleTime', calc.preferredTime);
+        updateJourneySummary(); renderRail();
+      });
     });
-    document.getElementById('scheduleTime').addEventListener('change', event => {
-      calc.preferredTime = event.target.value;
-      document.getElementById('contactTime').value = event.target.value;
-      updateJourneySummary(); renderRail();
+    document.getElementById('contactEvent').addEventListener('change', event => {
+      if (!eventData[event.target.value]) return;
+      calc.event = event.target.value;
+      document.querySelectorAll('input[name="event"]').forEach(input => {
+        input.checked = input.value === calc.event;
+      });
+      updateQuote(); renderRail();
     });
     applyScheduleTimeBounds();
+    applyScheduleDateBounds();
 
     document.querySelectorAll('.faq-trigger').forEach(button => button.addEventListener('click', () => {
       const item = button.closest('.faq-item'); const open = item.classList.toggle('open'); button.setAttribute('aria-expanded', String(open));
@@ -374,21 +435,27 @@
     const toast = document.getElementById('toast'); let toastTimer;
     function showToast(message) { clearTimeout(toastTimer); toast.textContent = message; toast.classList.add('show'); toastTimer = setTimeout(() => toast.classList.remove('show'), 3200); }
 
-    document.getElementById('contactForm').addEventListener('submit', e => {
-      e.preventDefault();
-      const form = e.currentTarget;
-      if (!form.reportValidity()) return;
+    function buildInquiryMailto() {
       const name = document.getElementById('contactName').value.trim();
       const email = document.getElementById('contactEmail').value.trim();
       const phone = document.getElementById('contactPhone').value.trim();
       const date = document.getElementById('contactDate').value;
       const time = document.getElementById('contactTime').value;
-      const event = document.getElementById('contactEvent').value;
-      const message = document.getElementById('contactMessage').value.trim();
+      const event = eventData[calc.event].label;
+      const personalMessage = document.getElementById('contactMessage').value.trim();
+      const message = quoteText() + (personalMessage ? '\n\nPersönliche Nachricht:\n' + personalMessage : '');
       const subject = encodeURIComponent(`Unverbindliche Anfrage${event ? ' – ' + event : ''}`);
       const body = encodeURIComponent(`Name: ${name}\nE-Mail: ${email}\nTelefon: ${phone || '-'}\nWunschtermin: ${date || '-'}${time ? ' · ' + time + ' Uhr' : ''}\nAnlass: ${event || '-'}\n\n${message}`);
+      return `mailto:${CONFIG.email}?subject=${subject}&body=${body}`;
+    }
+
+    document.getElementById('contactForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      if (!validateSchedule(true)) return;
+      if (!form.reportValidity()) return;
       document.getElementById('formStatus').textContent = 'Die vorbereitete E-Mail wird geöffnet …';
-      window.location.href = `mailto:${CONFIG.email}?subject=${subject}&body=${body}`;
+      window.location.href = buildInquiryMailto();
       showToast('E-Mail-Anfrage wurde vorbereitet.');
     });
 
@@ -397,6 +464,7 @@
     document.getElementById('instagramLink').rel = 'noopener';
     document.getElementById('whatsappLink').addEventListener('click', e => {
       e.preventDefault();
+      if (!validateSchedule(calc.step === TOTAL_STEPS)) return;
       const url = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(quoteText())}`;
       window.open(url, '_blank', 'noopener');
     });
