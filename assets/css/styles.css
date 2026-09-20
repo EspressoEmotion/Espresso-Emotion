@@ -744,3 +744,14 @@
       .recap-row { grid-template-columns: 1fr auto; }
       .recap-row small { grid-column: 1 / -1; }
     }
+
+    /* Full photographs: landscape team hero and paired portraits of Alex. */
+    .hero-stage-team { min-height: 0; }
+    .hero-stage-team .hero-card { position: relative; inset: auto; }
+    .hero-stage-team .hero-card img { display: block; width: 100%; height: auto; object-fit: contain; }
+    .hero-stage-team .hero-chip { position: relative; right: auto; bottom: auto; margin: 18px 0 0 auto; }
+    .story-photo-pair { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; width: 100%; max-width: 1000px; margin: 26px auto 0; align-items: start; }
+    .story-photo-pair .story-photo { max-width: none; }
+    @media (max-width: 680px) {
+      .story-photo-pair { grid-template-columns: 1fr; max-width: 560px; }
+    }
