@@ -60,7 +60,9 @@ h2 { font-size: clamp(2.15rem, 3.7vw, 3.6rem); line-height: 1.06; text-wrap: bal
 .service-photo { height: 340px; min-height: 0; }
 .service-photo-coffee { width: 100%; max-width: 420px; height: auto; justify-self: center; }
 .service-photo-coffee img { display: block; height: auto; object-fit: contain; }
-.service-photo-coffee figcaption { position: static; padding: 24px 28px; background: var(--espresso); }
+.service-photo figcaption { position: static; padding: 24px 28px; background: var(--espresso); }
+.service-photo-waffle { height: auto; }
+.service-photo-waffle img { display: block; height: 338px; }
 
 /* Reasons: a calm comparative list; no circles or process connectors. */
 #warum-wir .reason-row { grid-template-columns: 32px minmax(0, .9fr) minmax(0, 1.1fr); gap: 28px; padding-block: 23px; }
